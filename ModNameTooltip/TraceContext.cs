@@ -134,7 +134,7 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, Item
                 tracedKeys = (HashSet<string>?)hashGetter.DynamicInvoke(asset);
                 if (tracedKeys == null)
                 {
-                    ModEntry.Log("active -> false 1");
+                    ModEntry.Log($"Failed to get traced keys for '{TracedAsset}', disabling tracking", LogLevel.Warn);
                     active = false;
                     // original
                     originalApply(asset);
@@ -158,7 +158,7 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, Item
             HashSet<string>? tracedKeysAfter = (HashSet<string>?)hashGetter.DynamicInvoke(asset);
             if (tracedKeysAfter == null)
             {
-                ModEntry.Log("active -> false 2");
+                ModEntry.Log($"Failed to get traced keys for '{TracedAsset}', disabling tracking", LogLevel.Warn);
                 active = false;
                 return;
             }
@@ -166,10 +166,7 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, Item
             HashSet<string> added = tracedKeysAfter.Except(tracedKeys).ToHashSet();
             tracedKeys = tracedKeysAfter;
 
-            if (mod?.Manifest.UniqueID != ModEntry.ModId)
-            {
-                tracedFrames.Add(new DataTraceFrame(mod?.Manifest.UniqueID, onBehalfOf, added));
-            }
+            tracedFrames.Add(new DataTraceFrame(mod?.Manifest.UniqueID, onBehalfOf, added));
         };
     }
 

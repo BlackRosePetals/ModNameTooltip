@@ -98,7 +98,7 @@ public sealed class ModEntry : Mod
         }
 
         help.Events.Content.AssetReady += OnAssetReady;
-        help.Events.Content.AssetRequested += OnASsetRequested;
+        help.Events.Content.AssetRequested += OnAssetRequested;
 
         AddTraceCtx("(O)", "Data/Objects");
         AddTraceCtx("(BC)", "Data/BigCraftables");
@@ -148,7 +148,7 @@ public sealed class ModEntry : Mod
         return false;
     }
 
-    private void OnASsetRequested(object? sender, AssetRequestedEventArgs e)
+    private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
     {
         foreach (TraceContext ctx in traceCtx)
         {
