@@ -108,6 +108,7 @@ public sealed class ModEntry : Mod
         AddTraceCtx("(H)", "Data/hats");
         AddTraceCtx("(M)", "Data/Mannequins");
         AddTraceCtx("(P)", "Data/Pants");
+        AddTraceCtx("(S)", "Data/Shirts");
         AddTraceCtx("(T)", "Data/Tools");
         AddTraceCtx("(TR)", "Data/Trinkets");
         // special handling for walls and floors
