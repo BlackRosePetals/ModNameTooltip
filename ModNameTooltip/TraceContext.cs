@@ -9,14 +9,10 @@ using StardewValley;
 
 namespace ModNameTooltip;
 
-public sealed record ModNameText(string ModId, string ModName);
-
-public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, Item, string?>? specialLookup = null)
+public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, string, ModNameText?>? specialLookup = null)
 {
-    internal const string STARDEW_VALLEY = "StardewValley";
-
     public readonly IAssetName TracedAsset = tracedAsset;
-    private readonly Func<TraceContext, Item, string?>? specialLookup = specialLookup;
+    private readonly Func<TraceContext, string, ModNameText?>? specialLookup = specialLookup;
 
     private bool active = true;
     private HashSet<string>? tracedKeys = null;
@@ -28,16 +24,15 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, Item
     public IReadOnlyDictionary<string, ModNameText> KeyToMod => keyToMod;
     public int keyToModLastPopulated = -1;
 
-    public bool TryGetItemModName(Item item, [NotNullWhen(true)] out string? modName)
+    public bool TryGetItemModName(string itemId, [NotNullWhen(true)] out ModNameText? modName)
     {
-        modName = specialLookup?.Invoke(this, item);
+        modName = specialLookup?.Invoke(this, itemId);
         if (modName != null)
         {
             return true;
         }
-        if (KeyToMod.TryGetValue(item.ItemId, out ModNameText? text))
+        if (KeyToMod.TryGetValue(itemId, out modName))
         {
-            modName = text.ModName;
             return true;
         }
         return false;
@@ -57,11 +52,14 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, Item
             ModNameText modNameText;
             if (ModEntry.help.ModRegistry.Get(modId) is IModInfo modInfo)
             {
-                modNameText = new(modId, modInfo.Manifest.Name);
+                modNameText = new(modId, modInfo.Manifest.Name ?? string.Empty);
             }
             else
             {
-                modNameText = new(modId, modId == STARDEW_VALLEY ? I18n.Game_Title() : modId);
+                modNameText =
+                    modId == ModNameText.STARDEW_VALLEY
+                        ? ModNameText.STARDEW
+                        : new(modId ?? string.Empty, modId ?? string.Empty);
             }
             foreach (string key in frame.AddedKeys)
             {
@@ -144,8 +142,8 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, Item
                 AssetLoadOperation? loader = loadOperations.MaxBy(p => p.Priority);
                 tracedFrames.Add(
                     new DataTraceFrame(
-                        loader != null ? mod?.Manifest.UniqueID : STARDEW_VALLEY,
-                        loader != null ? onBehalfOf : STARDEW_VALLEY,
+                        loader != null ? mod?.Manifest.UniqueID : ModNameText.STARDEW_VALLEY,
+                        loader != null ? onBehalfOf : ModNameText.STARDEW_VALLEY,
                         tracedKeys.ToHashSet()
                     )
                 );

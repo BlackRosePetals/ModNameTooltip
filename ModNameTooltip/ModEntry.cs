@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
@@ -134,20 +133,6 @@ public sealed class ModEntry : Mod
         }
     }
 
-    internal static bool TryGetItemModName(Item? item, [NotNullWhen(true)] out string? modName)
-    {
-        modName = null;
-        if (
-            item != null
-            && itemTypeToTraceCtx.TryGetValue(item.GetItemTypeId(), out TraceContext? ctx)
-            && ctx.TryGetItemModName(item, out modName)
-        )
-        {
-            return true;
-        }
-        return false;
-    }
-
     private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
     {
         foreach (TraceContext ctx in traceCtx)
@@ -179,13 +164,12 @@ public sealed class ModEntry : Mod
         IAssetName assetName = help.GameContent.ParseAssetName("Data/AdditionalWallpaperFlooring");
         TraceContext ctx = new(
             assetName,
-            static (ctx, item) =>
+            static (ctx, itemId) =>
             {
-                if (int.TryParse(item.ItemId, out _))
+                if (int.TryParse(itemId, out _))
                 {
-                    return I18n.Game_Title();
+                    return ModNameText.STARDEW;
                 }
-                string itemId = item.ItemId;
                 string[] parts = itemId.Split(':');
                 if (parts.Length > 1 && int.TryParse(parts.Last(), out int idx))
                 {
@@ -193,7 +177,7 @@ public sealed class ModEntry : Mod
                 }
                 if (ctx.KeyToMod.TryGetValue(itemId, out ModNameText? text))
                 {
-                    return text.ModName;
+                    return text;
                 }
                 return null;
             }
@@ -257,7 +241,7 @@ public sealed class ModEntry : Mod
             // IL_038e: add
             // IL_038f: stloc.2
 
-            LocalBuilder modNameLoc = generator.DeclareLocal(typeof(string));
+            LocalBuilder modNameLoc = generator.DeclareLocal(typeof(ModNameText));
             LocalBuilder modNameSize = generator.DeclareLocal(typeof(Vector2));
             MethodInfo measureString = AccessTools.Method(
                 typeof(SpriteFont),
@@ -332,7 +316,7 @@ public sealed class ModEntry : Mod
                     // measure
                     new(OpCodes.Ldloc, modNameLoc.LocalIndex),
                     new(OpCodes.Ldarg_2),
-                    new(OpCodes.Call, AccessTools.DeclaredMethod(typeof(ModEntry), nameof(MeasureModName))),
+                    new(OpCodes.Call, AccessTools.DeclaredMethod(typeof(ModNameText), nameof(ModNameText.Measure))),
                     new(OpCodes.Stloc, modNameSize.LocalIndex),
                     // adjust width
                     ldlocWidth.Clone(),
@@ -433,16 +417,16 @@ public sealed class ModEntry : Mod
                 .ThrowIfNotMatch("Failed to match 'num6 += ((boldTitleText != null) ? 16 : 0)");
             CodeInstruction ldlocY = matcher.InstructionAt(-8);
             CodeInstruction stlocY = matcher.InstructionAt(-1);
-            matcher.Opcode = OpCodes.Ldarg_0;
-            matcher.Operand = null;
+            matcher.Opcode = OpCodes.Ldloc;
+            matcher.Operand = modNameLoc.LocalIndex;
             matcher
                 .Advance(1)
                 .InsertAndAdvance([
-                    new(OpCodes.Ldloc, modNameLoc.LocalIndex),
+                    new(OpCodes.Ldarg_0),
                     new(OpCodes.Ldarg_2),
                     ldlocX.Clone(),
                     ldlocY.Clone(),
-                    new(OpCodes.Call, AccessTools.DeclaredMethod(typeof(ModEntry), nameof(DrawModName))),
+                    new(OpCodes.Call, AccessTools.DeclaredMethod(typeof(ModNameText), nameof(ModNameText.Draw))),
                     ldlocY.Clone(),
                     new(OpCodes.Ldloc, modNameSize.LocalIndex),
                     new(OpCodes.Ldfld, vector2Y),
@@ -461,31 +445,17 @@ public sealed class ModEntry : Mod
         }
     }
 
-    private static string GetModName(Item hoveredItem)
+    private static ModNameText GetModName(Item hoveredItem)
     {
         if (
             hoveredItem != null
             && itemTypeToTraceCtx.TryGetValue(hoveredItem.GetItemTypeId(), out TraceContext? ctx)
-            && ctx.TryGetItemModName(hoveredItem, out string? modName)
+            && ctx.TryGetItemModName(hoveredItem.ItemId, out ModNameText? modName)
         )
         {
             return modName;
         }
-        return string.Empty;
-    }
-
-    private static Vector2 MeasureModName(string modName, SpriteFont font)
-    {
-        if (string.IsNullOrEmpty(modName))
-            return Vector2.Zero;
-        return font.MeasureString(modName);
-    }
-
-    private static void DrawModName(SpriteBatch b, string modName, SpriteFont font, int x, int y)
-    {
-        if (string.IsNullOrEmpty(modName))
-            return;
-        Utility.drawTextWithShadow(b, modName, font, new Vector2(x + 16, y), Game1.textColor);
+        return ModNameText.EMPTY;
     }
 
     /// <summary>SMAPI static monitor Log wrapper</summary>
