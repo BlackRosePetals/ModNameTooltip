@@ -9,10 +9,10 @@ using StardewValley;
 
 namespace ModNameTooltip;
 
-public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, string, ModNameText?>? specialLookup = null)
+public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, string, ModNameInfo?>? specialLookup = null)
 {
     public readonly IAssetName TracedAsset = tracedAsset;
-    private readonly Func<TraceContext, string, ModNameText?>? specialLookup = specialLookup;
+    private readonly Func<TraceContext, string, ModNameInfo?>? specialLookup = specialLookup;
 
     private bool active = true;
     private HashSet<string>? tracedKeys = null;
@@ -20,11 +20,11 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, stri
     internal static Dictionary<Type, Delegate?> keyGetters = [];
     internal static Dictionary<Type, Delegate?> idGetters = [];
 
-    private readonly Dictionary<string, ModNameText> keyToMod = [];
-    public IReadOnlyDictionary<string, ModNameText> KeyToMod => keyToMod;
+    private readonly Dictionary<string, ModNameInfo> keyToMod = [];
+    public IReadOnlyDictionary<string, ModNameInfo> KeyToMod => keyToMod;
     public int keyToModLastPopulated = -1;
 
-    public bool TryGetItemModName(string itemId, [NotNullWhen(true)] out ModNameText? modName)
+    public bool TryGetItemModName(string itemId, [NotNullWhen(true)] out ModNameInfo? modName)
     {
         modName = specialLookup?.Invoke(this, itemId);
         if (modName != null)
@@ -49,16 +49,7 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, stri
         foreach (DataTraceFrame frame in tracedFrames)
         {
             string modId = frame.ModId;
-            ModNameText modNameText;
-            if (ModEntry.help.ModRegistry.Get(modId) is IModInfo modInfo)
-            {
-                modNameText = new(modId, modInfo);
-            }
-            else
-            {
-                modNameText =
-                    modId == ModNameText.STARDEW_VALLEY ? ModNameText.STARDEW : new(modId ?? string.Empty, null);
-            }
+            ModNameInfo modNameText = ModNameInfo.Make(modId);
             foreach (string key in frame.AddedKeys)
             {
                 keyToMod[key] = modNameText;
@@ -140,8 +131,8 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, stri
                 AssetLoadOperation? loader = loadOperations.MaxBy(p => p.Priority);
                 tracedFrames.Add(
                     new DataTraceFrame(
-                        loader != null ? mod?.Manifest.UniqueID : ModNameText.STARDEW_VALLEY,
-                        loader != null ? onBehalfOf : ModNameText.STARDEW_VALLEY,
+                        loader != null ? mod?.Manifest.UniqueID : ModNameInfo.STARDEW_VALLEY,
+                        loader != null ? onBehalfOf : ModNameInfo.STARDEW_VALLEY,
                         tracedKeys.ToHashSet()
                     )
                 );
