@@ -4,7 +4,7 @@ using StardewValley.ItemTypeDefinitions;
 
 namespace ModNameTooltip;
 
-public sealed class ModNameTooltipAPI : IModNameTooltip
+public sealed class ModNameAPI : IModNameAPI
 {
     // <inheritdoc/>
     public bool TryGetModName(Item? item, [NotNullWhen(true)] out IModNameInfo? modName)

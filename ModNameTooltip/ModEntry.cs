@@ -80,7 +80,7 @@ public sealed class ModEntry : Mod
 
     public override object? GetApi()
     {
-        return new ModNameTooltipAPI();
+        return new ModNameAPI();
     }
 
     private void ConsoleDebugPrint(string arg1, string[] arg2)
