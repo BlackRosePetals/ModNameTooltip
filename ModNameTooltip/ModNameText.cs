@@ -5,12 +5,12 @@ using StardewValley;
 
 namespace ModNameTooltip;
 
-public sealed record ModNameInfo(string ModId, IModInfo? ModInfo, Color? ModNameColor = null) : IModNameInfo
+public sealed record ModNameInfo(string ModId, IModInfo? ModInfo, Color ModNameColor) : IModNameInfo
 {
     internal const string ModNameColorKey = $"{ModEntry.ModId}/ModNameColor";
     internal const string STARDEW_VALLEY = "STARDEW_VALLEY";
     internal static readonly ModNameInfo STARDEW = new(STARDEW_VALLEY, null, Color.ForestGreen);
-    internal static readonly ModNameInfo EMPTY = new(string.Empty, null);
+    internal static readonly ModNameInfo EMPTY = new(string.Empty, null, Color.SlateBlue);
 
     public static ModNameInfo Make(string modId)
     {
@@ -18,14 +18,13 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo, Color? ModName
             return STARDEW;
 
         IModInfo? modInfo = ModEntry.help.ModRegistry.Get(modId);
-        Color? modNameColor = null;
+        Color modNameColor = Color.SlateBlue;
         if (
-            !modNameColor.HasValue
-            && (modInfo?.Manifest.ExtraFields.TryGetValue(ModNameColorKey, out object? modNameColorThing) ?? false)
+            (modInfo?.Manifest.ExtraFields.TryGetValue(ModNameColorKey, out object? modNameColorThing) ?? false)
             && modNameColorThing is string modNameColorStr
         )
         {
-            modNameColor = Utility.StringToColor(modNameColorStr);
+            modNameColor = Utility.StringToColor(modNameColorStr) ?? Color.SlateBlue;
         }
         return new(modId, modInfo, modNameColor);
     }
@@ -50,6 +49,6 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo, Color? ModName
             return;
         if (string.IsNullOrEmpty(txt.ModId))
             return;
-        Utility.drawTextWithShadow(b, txt.ModName, font, new Vector2(x + 16, y), txt.ModNameColor ?? Color.SlateBlue);
+        Utility.drawTextWithShadow(b, txt.ModName, font, new Vector2(x + 16, y), txt.ModNameColor);
     }
 }

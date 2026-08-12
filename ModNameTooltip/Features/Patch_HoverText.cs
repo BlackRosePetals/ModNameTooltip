@@ -331,7 +331,7 @@ public static class Patch_HoverText
         if (
             hoveredItem != null
             && ModEntry.itemTypeToTraceCtx.TryGetValue(hoveredItem.GetItemTypeId(), out TraceContext? ctx)
-            && ctx.TryGetItemModName(hoveredItem.ItemId, out ModNameInfo? modName)
+            && ctx.TryGetModName(hoveredItem.ItemId, out ModNameInfo? modName)
         )
         {
             return modName;

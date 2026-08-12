@@ -24,18 +24,12 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, stri
     public IReadOnlyDictionary<string, ModNameInfo> KeyToMod => keyToMod;
     public int keyToModLastPopulated = -1;
 
-    public bool TryGetItemModName(string itemId, [NotNullWhen(true)] out ModNameInfo? modName)
+    public bool TryGetModName(string key, [NotNullWhen(true)] out ModNameInfo? modName)
     {
-        modName = specialLookup?.Invoke(this, itemId);
+        modName = specialLookup?.Invoke(this, key);
         if (modName != null)
-        {
             return true;
-        }
-        if (KeyToMod.TryGetValue(itemId, out modName))
-        {
-            return true;
-        }
-        return false;
+        return KeyToMod.TryGetValue(key, out modName);
     }
 
     public void PopulateKeyToMod(IAssetName assetName)

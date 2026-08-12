@@ -13,7 +13,7 @@ public interface IModNameInfo
     string ModName { get; }
 
     /// <summary>Display color for this mod's name</summary>
-    Color? ModNameColor { get; }
+    Color ModNameColor { get; }
 }
 
 public interface IModNameTooltip
@@ -27,11 +27,34 @@ public interface IModNameTooltip
     bool TryGetModName(Item? item, [NotNullWhen(true)] out IModNameInfo? modName);
 
     /// <summary>
-    /// Try and get info about which mod using the item type and item id
+    /// Try and get info about which mod using a real character instance
     /// </summary>
-    /// <param name="itemType">The item type id, such as '(O)'</param>
-    /// <param name="itemId">The unqualified item id</param>
+    /// <param name="character">The character to find mod name for</param>
     /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
     /// <returns>True if the mod is found</returns>
-    bool TryGetModName(string itemType, string itemId, [NotNullWhen(true)] out IModNameInfo? modName);
+    bool TryGetModName(Character? character, [NotNullWhen(true)] out IModNameInfo? modName);
+
+    /// <summary>
+    /// Try and get info about which mod added an item using the item id
+    /// </summary>
+    /// <param name="itemId">The item id, qualified or unqualified</param>
+    /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
+    /// <returns>True if the mod is found</returns>
+    bool TryGetModName_FromItemId(string itemId, [NotNullWhen(true)] out IModNameInfo? modName);
+
+    /// <summary>
+    /// Try and get info about which mod added a farm animal using the farm animal type
+    /// </summary>
+    /// <param name="farmAnimalType">The farm animal type</param>
+    /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
+    /// <returns>True if the mod is found</returns>
+    bool TryGetModName_FromFarmAnimalType(string farmAnimalType, [NotNullWhen(true)] out IModNameInfo? modName);
+
+    /// <summary>
+    /// Try and get info about which mod added a farm animal using the farm animal type
+    /// </summary>
+    /// <param name="npcName">The item id, qualified or unqualified</param>
+    /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
+    /// <returns>True if the mod is found</returns>
+    bool TryGetModName_FromNpcName(string npcName, [NotNullWhen(true)] out IModNameInfo? modName);
 }

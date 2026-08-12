@@ -48,7 +48,7 @@ public static class Patch_SMAPIGetFromNamespacedId
             return;
         foreach (TraceContext ctx in ModEntry.traceCtx)
         {
-            if (ctx.TryGetItemModName(namespacedId, out ModNameInfo? modName))
+            if (ctx.TryGetModName(namespacedId, out ModNameInfo? modName))
             {
                 __result = modName.ModInfo;
                 return;

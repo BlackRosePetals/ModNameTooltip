@@ -24,6 +24,8 @@ public sealed class ModEntry : Mod
     internal static readonly Harmony harmony = new(ModId);
     internal static readonly List<TraceContext> traceCtx = [];
     internal static readonly Dictionary<string, TraceContext> itemTypeToTraceCtx = [];
+    internal static TraceContext npcTraceCtx = null!;
+    internal static TraceContext farmAnimalTraceCtx = null!;
 
     public override void Entry(IModHelper helper)
     {
@@ -54,19 +56,21 @@ public sealed class ModEntry : Mod
         help.Events.Content.AssetReady += OnAssetReady;
         help.Events.Content.AssetRequested += OnAssetRequested;
 
-        AddTraceCtx("(O)", "Data/Objects");
-        AddTraceCtx("(BC)", "Data/BigCraftables");
-        AddTraceCtx("(F)", "Data/Furniture");
-        AddTraceCtx("(W)", "Data/Weapons");
-        AddTraceCtx("(B)", "Data/Boots");
-        AddTraceCtx("(H)", "Data/hats");
-        AddTraceCtx("(M)", "Data/Mannequins");
-        AddTraceCtx("(P)", "Data/Pants");
-        AddTraceCtx("(S)", "Data/Shirts");
-        AddTraceCtx("(T)", "Data/Tools");
-        AddTraceCtx("(TR)", "Data/Trinkets");
+        AddItemTraceCtx("(O)", "Data/Objects");
+        AddItemTraceCtx("(BC)", "Data/BigCraftables");
+        AddItemTraceCtx("(F)", "Data/Furniture");
+        AddItemTraceCtx("(W)", "Data/Weapons");
+        AddItemTraceCtx("(B)", "Data/Boots");
+        AddItemTraceCtx("(H)", "Data/hats");
+        AddItemTraceCtx("(M)", "Data/Mannequins");
+        AddItemTraceCtx("(P)", "Data/Pants");
+        AddItemTraceCtx("(S)", "Data/Shirts");
+        AddItemTraceCtx("(T)", "Data/Tools");
+        AddItemTraceCtx("(TR)", "Data/Trinkets");
         // special handling for walls and floors
         AddTraceCtxForWallsAndFloors();
+
+        AddCharacterTraceCtx();
 
         help.ConsoleCommands.Add("mnt-print", "Print currently found keys", ConsoleDebugPrint);
 
@@ -121,7 +125,7 @@ public sealed class ModEntry : Mod
         }
     }
 
-    private static void AddTraceCtx(string itemTypeId, string assetNameStr)
+    private static void AddItemTraceCtx(string itemTypeId, string assetNameStr)
     {
         IAssetName assetName = help.GameContent.ParseAssetName(assetNameStr);
         TraceContext ctx = new(assetName);
@@ -155,6 +159,14 @@ public sealed class ModEntry : Mod
         itemTypeToTraceCtx["(WP)"] = ctx;
         itemTypeToTraceCtx["(FL)"] = ctx;
         traceCtx.Add(ctx);
+    }
+
+    private static void AddCharacterTraceCtx()
+    {
+        npcTraceCtx = new(help.GameContent.ParseAssetName("Data/Characters"));
+        traceCtx.Add(npcTraceCtx);
+        farmAnimalTraceCtx = new(help.GameContent.ParseAssetName("Data/FarmAnimals"));
+        traceCtx.Add(farmAnimalTraceCtx);
     }
 
     private static void AssetRequestedEventArgs_Edit_Prefix(
