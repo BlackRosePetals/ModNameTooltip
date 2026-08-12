@@ -25,6 +25,9 @@ public sealed class ModEntry : Mod
     private static IMonitor mon = null!;
     internal static IModHelper help = null!;
 
+    public const string ModNameString = $"{ModId}/ModName";
+
+    internal static readonly Harmony harmony = new(ModId);
     internal static readonly List<TraceContext> traceCtx = [];
     internal static readonly Dictionary<string, TraceContext> itemTypeToTraceCtx = [];
 
@@ -34,7 +37,7 @@ public sealed class ModEntry : Mod
         mon = Monitor;
         help = helper;
 
-        Harmony harmony = new(ModId);
+
         try
         {
             harmony.Patch(
@@ -47,13 +50,46 @@ public sealed class ModEntry : Mod
                     priority = Priority.First,
                 }
             );
+        }
+        catch (Exception ex)
+        {
+            Log($"Failed to patch AssetRequestedEventArgs.Edit\n{ex}", LogLevel.Error);
+            return;
+        }
+
+        Toggle_Tooltip();
+
+        help.Events.Content.AssetReady += OnAssetReady;
+        help.Events.Content.AssetRequested += OnAssetRequested;
+
+        AddTraceCtx("(O)", "Data/Objects");
+        AddTraceCtx("(BC)", "Data/BigCraftables");
+        AddTraceCtx("(F)", "Data/Furniture");
+        AddTraceCtx("(W)", "Data/Weapons");
+        AddTraceCtx("(B)", "Data/Boots");
+        AddTraceCtx("(H)", "Data/hats");
+        AddTraceCtx("(M)", "Data/Mannequins");
+        AddTraceCtx("(P)", "Data/Pants");
+        AddTraceCtx("(S)", "Data/Shirts");
+        AddTraceCtx("(T)", "Data/Tools");
+        AddTraceCtx("(TR)", "Data/Trinkets");
+        // special handling for walls and floors
+        AddTraceCtxForWallsAndFloors();
+
+        help.ConsoleCommands.Add("mnt-print", "Print currently found keys", ConsoleDebugPrint);
+    }
+
+    private static void Toggle_Tooltip()
+    {
+        try
+        {
             harmony.Patch(
-                original: AccessTools.DeclaredMethod(
-                    typeof(IClickableMenu),
-                    nameof(IClickableMenu.drawHoverText),
-                    [
-                        // 0
-                        typeof(SpriteBatch),
+                    original: AccessTools.DeclaredMethod(
+                        typeof(IClickableMenu),
+                        nameof(IClickableMenu.drawHoverText),
+                        [
+                            // 0
+                            typeof(SpriteBatch),
                         typeof(StringBuilder),
                         typeof(SpriteFont),
                         typeof(int),
@@ -82,38 +118,18 @@ public sealed class ModEntry : Mod
                         typeof(float),
                         typeof(int),
                         typeof(int),
-                    ]
-                ),
-                transpiler: new HarmonyMethod(typeof(ModEntry), nameof(IClickableMenu_drawHoverText_Transpiler))
-                {
-                    priority = Priority.Last,
-                }
-            );
+                        ]
+                    ),
+                    transpiler: new HarmonyMethod(typeof(ModEntry), nameof(IClickableMenu_drawHoverText_Transpiler))
+                    {
+                        priority = Priority.Last,
+                    }
+                );
         }
         catch (Exception ex)
         {
-            Log($"Failed to patch\n{ex}", LogLevel.Error);
-            return;
+            Log($"Failed to Toggle_Tooltip \n{ex}", LogLevel.Error);
         }
-
-        help.Events.Content.AssetReady += OnAssetReady;
-        help.Events.Content.AssetRequested += OnAssetRequested;
-
-        AddTraceCtx("(O)", "Data/Objects");
-        AddTraceCtx("(BC)", "Data/BigCraftables");
-        AddTraceCtx("(F)", "Data/Furniture");
-        AddTraceCtx("(W)", "Data/Weapons");
-        AddTraceCtx("(B)", "Data/Boots");
-        AddTraceCtx("(H)", "Data/hats");
-        AddTraceCtx("(M)", "Data/Mannequins");
-        AddTraceCtx("(P)", "Data/Pants");
-        AddTraceCtx("(S)", "Data/Shirts");
-        AddTraceCtx("(T)", "Data/Tools");
-        AddTraceCtx("(TR)", "Data/Trinkets");
-        // special handling for walls and floors
-        AddTraceCtxForWallsAndFloors();
-
-        help.ConsoleCommands.Add("mnt-print", "Print currently found keys", ConsoleDebugPrint);
     }
 
     public override object? GetApi()
@@ -135,6 +151,18 @@ public sealed class ModEntry : Mod
 
     private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
     {
+        if (e.Name.IsEquivalentTo(ModNameString))
+        {
+            string stringsAsset = Path.Combine("i18n", e.Name.LanguageCode.ToString() ?? "default", "mod-names.json");
+            if (File.Exists(Path.Combine(help.DirectoryPath, stringsAsset)))
+                e.LoadFromModFile<Dictionary<string, string>>(stringsAsset, AssetLoadPriority.Exclusive);
+            else
+                e.LoadFromModFile<Dictionary<string, string>>(
+                    "i18n/default/mod-names.json",
+                    AssetLoadPriority.Exclusive
+                );
+            return;
+        }
         foreach (TraceContext ctx in traceCtx)
         {
             // do a bogus edit so that our prefix always happens bolb

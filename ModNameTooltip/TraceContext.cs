@@ -52,14 +52,12 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, stri
             ModNameText modNameText;
             if (ModEntry.help.ModRegistry.Get(modId) is IModInfo modInfo)
             {
-                modNameText = new(modId, modInfo.Manifest.Name ?? string.Empty);
+                modNameText = new(modId, modInfo);
             }
             else
             {
                 modNameText =
-                    modId == ModNameText.STARDEW_VALLEY
-                        ? ModNameText.STARDEW
-                        : new(modId ?? string.Empty, modId ?? string.Empty);
+                    modId == ModNameText.STARDEW_VALLEY ? ModNameText.STARDEW : new(modId ?? string.Empty, null);
             }
             foreach (string key in frame.AddedKeys)
             {
