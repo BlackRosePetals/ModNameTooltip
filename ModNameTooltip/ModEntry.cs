@@ -1,9 +1,13 @@
+using System.Buffers;
 using System.Diagnostics;
 using HarmonyLib;
+using Microsoft.Xna.Framework;
 using ModNameTooltip.Features;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
+using StardewValley;
+using StardewValley.Extensions;
 
 namespace ModNameTooltip;
 
@@ -29,6 +33,7 @@ public sealed class ModEntry : Mod
     internal static TraceContext farmAnimalTraceCtx = null!;
     internal static readonly ModNameAPI modNameAPI = new();
     internal static readonly PerScreen<Draw_CharacterHUD> drawChracterHud = new(() => new(Context.ScreenId));
+    internal static Color? menuColor = null;
 
     public override void Entry(IModHelper helper)
     {
@@ -59,6 +64,7 @@ public sealed class ModEntry : Mod
         help.Events.Content.AssetReady += OnAssetReady;
         help.Events.Content.AssetRequested += OnAssetRequested;
         help.Events.GameLoop.SaveLoaded += OnSaveLoaded;
+        help.Events.GameLoop.UpdateTicked += OnUpdateTicked;
 
         AddItemTraceCtx("(O)", "Data/Objects");
         AddItemTraceCtx("(BC)", "Data/BigCraftables");
@@ -77,6 +83,7 @@ public sealed class ModEntry : Mod
         AddCharacterTraceCtx();
 
         help.ConsoleCommands.Add("mnt-print", "Print currently found keys", ConsoleDebugPrint);
+        help.ConsoleCommands.Add("mnt-hashcolors", "Hash a color from all loaded mods", ConsoleHashColor);
 
         Patch_HoverText.Toggle();
         Patch_SMAPIGetFromNamespacedId.Toggle();
@@ -104,6 +111,19 @@ public sealed class ModEntry : Mod
         }
     }
 
+    private void ConsoleHashColor(string arg1, string[] arg2)
+    {
+        Color clr = ModNameInfo.HashColor(ModNameInfo.STARDEW_VALLEY);
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine($"\x1b[48;2;{clr.R};{clr.G};{clr.B}m{ModNameInfo.STARDEW_VALLEY}\x1b[0m");
+        foreach (IModInfo modInfo in Helper.ModRegistry.GetAll())
+        {
+            clr = ModNameInfo.HashColor(modInfo.Manifest.UniqueID);
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine($"\x1b[48;2;{clr.R};{clr.G};{clr.B}m{modInfo.Manifest.UniqueID}\x1b[0m");
+        }
+    }
+
     private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
     {
         if (e.Name.IsEquivalentTo(ModNameString))
@@ -128,9 +148,25 @@ public sealed class ModEntry : Mod
 
     private void OnAssetReady(object? sender, AssetReadyEventArgs e)
     {
+        if (e.NameWithoutLocale.IsEquivalentTo("LooseSprites\\Cursors"))
+        {
+            menuColor = null;
+        }
         foreach (TraceContext ctx in traceCtx)
         {
             ctx.PopulateKeyToMod(e.NameWithoutLocale);
+        }
+    }
+
+    private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)
+    {
+        if (Game1.mouseCursors != null && menuColor == null)
+        {
+            Color[] colors = ArrayPool<Color>.Shared.Rent(Game1.mouseCursors.GetElementCount());
+            Game1.mouseCursors.GetData(colors, 0, Game1.mouseCursors.GetElementCount());
+            menuColor = colors[306 + 320 * 704];
+            ArrayPool<Color>.Shared.Return(colors);
+            Log($"menuColor: {menuColor}");
         }
     }
 
