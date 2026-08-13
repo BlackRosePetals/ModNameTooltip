@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Diagnostics;
 using HarmonyLib;
 using Microsoft.Xna.Framework;
@@ -6,8 +5,6 @@ using ModNameTooltip.Features;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
-using StardewValley;
-using StardewValley.Extensions;
 
 namespace ModNameTooltip;
 
@@ -24,7 +21,7 @@ public sealed class ModEntry : Mod
     internal static IModHelper help = null!;
     internal static ModConfig config = null!;
 
-    public const string ModNameString = $"{ModId}/ModName";
+    public const string Asset_ModNames = $"{ModId}/ModNames";
 
     internal static readonly Harmony harmony = new(ModId);
     internal static readonly List<TraceContext> traceCtx = [];
@@ -83,7 +80,6 @@ public sealed class ModEntry : Mod
         AddCharacterTraceCtx();
 
         help.ConsoleCommands.Add("mnt-print", "Print currently found keys", ConsoleDebugPrint);
-        help.ConsoleCommands.Add("mnt-hashcolors", "Hash a color from all loaded mods", ConsoleHashColor);
 
         Patch_HoverText.Toggle();
         Patch_SMAPIGetFromNamespacedId.Toggle();
@@ -111,22 +107,9 @@ public sealed class ModEntry : Mod
         }
     }
 
-    private void ConsoleHashColor(string arg1, string[] arg2)
-    {
-        Color clr = ModNameInfo.HashColor(ModNameInfo.STARDEW_VALLEY);
-        Console.ForegroundColor = ConsoleColor.White;
-        Console.WriteLine($"\x1b[48;2;{clr.R};{clr.G};{clr.B}m{ModNameInfo.STARDEW_VALLEY}\x1b[0m");
-        foreach (IModInfo modInfo in Helper.ModRegistry.GetAll())
-        {
-            clr = ModNameInfo.HashColor(modInfo.Manifest.UniqueID);
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"\x1b[48;2;{clr.R};{clr.G};{clr.B}m{modInfo.Manifest.UniqueID}\x1b[0m");
-        }
-    }
-
     private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
     {
-        if (e.Name.IsEquivalentTo(ModNameString))
+        if (e.Name.IsEquivalentTo(Asset_ModNames))
         {
             string stringsAsset = Path.Combine("i18n", e.Name.LanguageCode.ToString() ?? "default", "mod-names.json");
             if (File.Exists(Path.Combine(help.DirectoryPath, stringsAsset)))
@@ -150,7 +133,8 @@ public sealed class ModEntry : Mod
     {
         if (e.NameWithoutLocale.IsEquivalentTo("LooseSprites\\Cursors"))
         {
-            menuColor = null;
+            ModNameInfo.ResetMenuColor();
+            return;
         }
         foreach (TraceContext ctx in traceCtx)
         {
@@ -160,14 +144,7 @@ public sealed class ModEntry : Mod
 
     private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)
     {
-        if (Game1.mouseCursors != null && menuColor == null)
-        {
-            Color[] colors = ArrayPool<Color>.Shared.Rent(Game1.mouseCursors.GetElementCount());
-            Game1.mouseCursors.GetData(colors, 0, Game1.mouseCursors.GetElementCount());
-            menuColor = colors[306 + 320 * 704];
-            ArrayPool<Color>.Shared.Return(colors);
-            Log($"menuColor: {menuColor}");
-        }
+        ModNameInfo.UpdateMenuColor();
     }
 
     private static void AddItemTraceCtx(string itemTypeId, string assetNameStr)

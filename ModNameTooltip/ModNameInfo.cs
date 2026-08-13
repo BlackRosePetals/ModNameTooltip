@@ -1,18 +1,31 @@
-using System.Security.Cryptography;
-using System.Text;
+using System.Buffers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewValley;
+using StardewValley.Extensions;
 
 namespace ModNameTooltip;
 
-public sealed record ModNameInfo(string ModId, IModInfo? ModInfo, Color ModNameColor) : IModNameInfo
+public sealed record ModNameInfo(string ModId, IModInfo? ModInfo) : IModNameInfo
 {
     internal const string ModNameColorKey = $"{ModEntry.ModId}/ModNameColor";
     internal const string STARDEW_VALLEY = "STARDEW_VALLEY";
-    internal static readonly ModNameInfo STARDEW = new(STARDEW_VALLEY, null, HashColor(STARDEW_VALLEY));
-    internal static readonly ModNameInfo EMPTY = new(string.Empty, null, Color.Transparent);
+    internal static readonly ModNameInfo STARDEW = new(STARDEW_VALLEY, null);
+    internal static readonly ModNameInfo EMPTY = new(string.Empty, null);
+    private static Color? colorMenu = null;
+    private static Color? colorTriadic1 = null;
+    private static Color? colorTriadic2 = null;
+
+    private readonly bool isStardew = ModId == STARDEW_VALLEY;
+
+    public string ModName =>
+        field ??=
+            Game1.content.LoadStringReturnNullIfNotFound($"{ModEntry.Asset_ModNames}:{ModId}")
+            ?? ModInfo?.Manifest.Name
+            ?? ModId;
+
+    public Color ModNameColor => (isStardew ? colorTriadic1 : colorTriadic2) ?? Color.SlateBlue;
 
     public static ModNameInfo Make(string modId)
     {
@@ -20,50 +33,8 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo, Color ModNameC
             return STARDEW;
 
         IModInfo? modInfo = ModEntry.help.ModRegistry.Get(modId);
-        // TODO: maybe this should be an asset thing too
-        // if (
-        //     (modInfo?.Manifest.ExtraFields.TryGetValue(ModNameColorKey, out object? modNameColorThing) ?? false)
-        //     && modNameColorThing is string modNameColorStr
-        // )
-        // {
-        //     modNameColor = Utility.StringToColor(modNameColorStr) ?? Color.SlateBlue;
-        // }
-        return new(modId, modInfo, HashColor(modId));
+        return new(modId, modInfo);
     }
-
-    internal static Color HashColor(string modId)
-    {
-        if (string.IsNullOrEmpty(modId))
-            return Color.Transparent;
-        byte[] hash = SHA1.HashData(Encoding.UTF8.GetBytes(modId));
-        Color hashColor = new(hash[15], hash[5], hash[10]);
-        Utility.RGBtoHSL(hashColor.R, hashColor.G, hashColor.B, out double h, out double s, out double l);
-        Utility.HSLtoRGB(h, s, l / 2, out int r, out int g, out int b);
-        hashColor = new(r, g, b);
-        if (ModEntry.menuColor is Color menuColor && IsColorTooSimilar(hashColor, menuColor))
-        {
-            return new(menuColor.PackedValue ^ 0x00FFFFFF);
-        }
-        if (IsColorTooSimilar(hashColor, Game1.textColor))
-        {
-            return ModEntry.menuColor.HasValue
-                ? new(ModEntry.menuColor.Value.PackedValue ^ 0x00FFFFFF)
-                : Color.SlateBlue;
-        }
-        return hashColor;
-    }
-
-    private static bool IsColorTooSimilar(Color hashColor, Color menuColor)
-    {
-        Utility.RGBtoHSL(menuColor.R, menuColor.G, menuColor.B, out double h1, out double s1, out double l1);
-        Utility.RGBtoHSL(hashColor.R, hashColor.G, hashColor.B, out double h2, out double s2, out double l2);
-        return Math.Abs(h1 - h2) < 0.1 && Math.Abs(s1 - s2) < 0.1 && Math.Abs(l1 - l2) < 0.1;
-    }
-
-    public string ModName { get; } =
-        Game1.content.LoadStringReturnNullIfNotFound($"{ModEntry.ModNameString}:{ModId}")
-        ?? ModInfo?.Manifest.Name
-        ?? ModId;
 
     public static Vector2 Measure(ModNameInfo? txt, SpriteFont font)
     {
@@ -80,6 +51,36 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo, Color ModNameC
             return;
         if (string.IsNullOrEmpty(txt.ModId))
             return;
-        Utility.drawTextWithShadow(b, txt.ModName, font, new Vector2(x + 16, y), txt.ModNameColor);
+        Utility.drawTextWithShadow(b, txt.ModName, font, new Vector2(x + 16, y), txt.ModNameColor, 1f, -1f, 2, 2);
+    }
+
+    internal static void ResetMenuColor()
+    {
+        colorMenu = null;
+        colorTriadic1 = null;
+        colorTriadic2 = null;
+    }
+
+    internal static void UpdateMenuColor()
+    {
+        if (Game1.mouseCursors == null || colorMenu != null)
+            return;
+
+        Color[] colors = ArrayPool<Color>.Shared.Rent(Game1.mouseCursors.GetElementCount());
+        Game1.mouseCursors.GetData(colors, 0, Game1.mouseCursors.GetElementCount());
+        Color menuClr = colors[306 + 320 * 704];
+        colorMenu = menuClr;
+        ArrayPool<Color>.Shared.Return(colors);
+
+        Utility.RGBtoHSL(menuClr.R, menuClr.G, menuClr.B, out double h1, out double s1, out double l1);
+
+        colorTriadic1 = MakeColor((h1 + 120) % 360, s1, l1);
+        colorTriadic2 = MakeColor((h1 + 240) % 360, s1, l1);
+
+        static Color MakeColor(double h2, double s1, double l1)
+        {
+            Utility.HSLtoRGB(h2, s1, l1 / 2, out int r, out int g, out int b);
+            return new(r, g, b);
+        }
     }
 }
