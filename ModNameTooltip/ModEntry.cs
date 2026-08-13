@@ -3,6 +3,7 @@ using HarmonyLib;
 using ModNameTooltip.Features;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
+using StardewModdingAPI.Utilities;
 
 namespace ModNameTooltip;
 
@@ -26,6 +27,8 @@ public sealed class ModEntry : Mod
     internal static readonly Dictionary<string, TraceContext> itemTypeToTraceCtx = [];
     internal static TraceContext npcTraceCtx = null!;
     internal static TraceContext farmAnimalTraceCtx = null!;
+    internal static readonly ModNameAPI modNameAPI = new();
+    internal static readonly PerScreen<Draw_CharacterHUD> drawChracterHud = new(() => new(Context.ScreenId));
 
     public override void Entry(IModHelper helper)
     {
@@ -55,6 +58,7 @@ public sealed class ModEntry : Mod
 
         help.Events.Content.AssetReady += OnAssetReady;
         help.Events.Content.AssetRequested += OnAssetRequested;
+        help.Events.GameLoop.SaveLoaded += OnSaveLoaded;
 
         AddItemTraceCtx("(O)", "Data/Objects");
         AddItemTraceCtx("(BC)", "Data/BigCraftables");
@@ -78,9 +82,14 @@ public sealed class ModEntry : Mod
         Patch_SMAPIGetFromNamespacedId.Toggle();
     }
 
+    private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
+    {
+        drawChracterHud.Value.Toggle();
+    }
+
     public override object? GetApi()
     {
-        return new ModNameAPI();
+        return modNameAPI;
     }
 
     private void ConsoleDebugPrint(string arg1, string[] arg2)
