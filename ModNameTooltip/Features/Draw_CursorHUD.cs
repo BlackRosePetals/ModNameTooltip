@@ -75,9 +75,10 @@ public sealed class Draw_CursorHUD(int screenId)
                 if (ModEntry.modNameAPI.TryGetModName(farmAnimal, out IModNameInfo? modName))
                 {
                     hoveredModName = modName;
-                    hoveredName = string.IsNullOrEmpty(farmAnimal.displayName)
-                        ? farmAnimal.Name
-                        : farmAnimal.displayName;
+                    hoveredName = I18n.Hud_FarmAnimal(
+                        string.IsNullOrEmpty(farmAnimal.displayName) ? farmAnimal.Name : farmAnimal.displayName,
+                        farmAnimal.type.Value
+                    );
                     CalculateSizes();
                     return true;
                 }
