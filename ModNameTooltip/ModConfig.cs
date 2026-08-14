@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using ModNameTooltip.Features;
 using ModNameTooltip.Integration;
 using StardewModdingAPI;
 using StardewValley;
@@ -55,7 +56,14 @@ public sealed class ModConfig
         gmcm.AddBoolOption(
             mod,
             () => Enable_Tooltip,
-            (value) => Enable_Tooltip = value,
+            (value) =>
+            {
+                if (Enable_Tooltip != value)
+                {
+                    Enable_Tooltip = value;
+                    Patch_HoverText.Toggle();
+                }
+            },
             I18n.Config_EnableTooltip_Name,
             I18n.Config_EnableTooltip_Desc
         );

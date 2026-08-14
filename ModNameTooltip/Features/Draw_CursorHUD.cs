@@ -1,7 +1,5 @@
-using System.Reflection;
 using HarmonyLib;
 using Microsoft.Xna.Framework;
-using Netcode;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -11,7 +9,7 @@ using StardewValley.TokenizableStrings;
 
 namespace ModNameTooltip.Features;
 
-public sealed class Draw_CursorHUD
+public sealed class Draw_CursorHUD(int screenId)
 {
     private const int BORDER_WIDTH = 16;
 
@@ -35,31 +33,7 @@ public sealed class Draw_CursorHUD
     private Vector2 hoveredModNamePos = Vector2.Zero;
     private Vector2 hoveredSize = Vector2.Zero;
 
-    private readonly int screenId;
-
-    public Draw_CursorHUD(int screenId)
-    {
-        this.screenId = screenId;
-        Toggle();
-    }
-
-    public void Toggle()
-    {
-        if (screenId != Context.ScreenId)
-            return;
-        ClearWeakRefs();
-        ClearHovered();
-        if (ModEntry.config.Enable_HUD)
-        {
-            ModEntry.help.Events.Display.RenderedHud += OnRenderedHud;
-            ModEntry.help.Events.Input.CursorMoved += OnCursorMoved;
-        }
-        else
-        {
-            ModEntry.help.Events.Display.RenderedHud -= OnRenderedHud;
-            ModEntry.help.Events.Input.CursorMoved -= OnCursorMoved;
-        }
-    }
+    private readonly int screenId = screenId;
 
     private bool TryMatchNPC(ICursorPosition cursor, GameLocation location)
     {
@@ -190,10 +164,11 @@ public sealed class Draw_CursorHUD
         CalculateSizes();
     }
 
-    private void OnCursorMoved(object? sender, CursorMovedEventArgs e)
+    internal void OnCursorMoved(CursorMovedEventArgs e)
     {
         if (
-            screenId == Context.ScreenId
+            ModEntry.config.Enable_HUD
+            && screenId == Context.ScreenId
             && Game1.currentLocation is GameLocation location
             && Game1.activeClickableMenu == null
             && Game1.currentLocation.currentEvent == null
@@ -206,17 +181,23 @@ public sealed class Draw_CursorHUD
                 || TryMatchObject(newPos, location)
                 || TryMatchTerrainFeature(newPos, location)
             )
+            {
                 return;
+            }
         }
         ClearHovered();
     }
 
-    private void OnRenderedHud(object? sender, RenderedHudEventArgs e)
+    internal void OnRenderedHud(RenderedHudEventArgs e)
     {
         if (
-            screenId != Context.ScreenId
-            || Game1.activeClickableMenu != null
-            || Game1.currentLocation.currentEvent != null
+            !(
+                ModEntry.config.Enable_HUD
+                && screenId == Context.ScreenId
+                && Game1.currentLocation != null
+                && Game1.activeClickableMenu == null
+                && Game1.currentLocation.currentEvent == null
+            )
             || hoveredModName == null
             || hoveredName == null
         )

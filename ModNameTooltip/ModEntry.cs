@@ -36,7 +36,7 @@ public sealed class ModEntry : Mod
     internal static TraceContext fruitTreeTraceCtx = null!;
 
     internal static readonly ModNameAPI modNameAPI = new();
-    internal static readonly PerScreen<Draw_CursorHUD> drawChracterHud = new(() => new(Context.ScreenId));
+    internal static readonly PerScreen<Draw_CursorHUD> drawCursorHUD = new(() => new(Context.ScreenId));
     internal static Color? menuColor = null;
 
     public override void Entry(IModHelper helper)
@@ -68,8 +68,9 @@ public sealed class ModEntry : Mod
         help.Events.Content.AssetReady += OnAssetReady;
         help.Events.Content.AssetRequested += OnAssetRequested;
         help.Events.GameLoop.GameLaunched += OnGameLaunched;
-        help.Events.GameLoop.SaveLoaded += OnSaveLoaded;
         help.Events.GameLoop.UpdateTicked += OnUpdateTicked;
+        help.Events.Input.CursorMoved += OnCursorMoved;
+        help.Events.Display.RenderedHud += OnRenderHud;
 
         AddItemTraceCtx("(O)", "Data/Objects");
         AddItemTraceCtx("(BC)", "Data/BigCraftables");
@@ -96,17 +97,22 @@ public sealed class ModEntry : Mod
         Patch_HoverText.Toggle();
     }
 
+    private void OnCursorMoved(object? sender, CursorMovedEventArgs e)
+    {
+        drawCursorHUD.Value.OnCursorMoved(e);
+    }
+
+    private void OnRenderHud(object? sender, RenderedHudEventArgs e)
+    {
+        drawCursorHUD.Value.OnRenderedHud(e);
+    }
+
     private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
     {
         config.Register(
             ModManifest,
             Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu")
         );
-    }
-
-    private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
-    {
-        drawChracterHud.Value.Toggle();
     }
 
     public override object? GetApi()
