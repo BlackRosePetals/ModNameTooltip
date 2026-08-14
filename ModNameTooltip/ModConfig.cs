@@ -9,6 +9,10 @@ public sealed class ModConfig
 {
     public bool Enable_Tooltip { get; set; } = true;
     public bool Enable_HUD { get; set; } = true;
+    public bool Enable_HUD_NPC { get; set; } = true;
+    public bool Enable_HUD_FarmAnimal { get; set; } = true;
+    public bool Enable_HUD_Object { get; set; } = true;
+    public bool Enable_HUD_TerrainFeature { get; set; } = true;
     public string? Color_SDV
     {
         get;
@@ -61,6 +65,25 @@ public sealed class ModConfig
             (value) => Enable_HUD = value,
             I18n.Config_EnableHUD_Name,
             I18n.Config_EnableHUD_Desc
+        );
+        gmcm.AddBoolOption(mod, () => Enable_HUD_NPC, (value) => Enable_HUD_NPC = value, I18n.Config_EnableHUDNPC_Name);
+        gmcm.AddBoolOption(
+            mod,
+            () => Enable_HUD_FarmAnimal,
+            (value) => Enable_HUD_FarmAnimal = value,
+            I18n.Config_EnableHUDFarmAnimal_Name
+        );
+        gmcm.AddBoolOption(
+            mod,
+            () => Enable_HUD_Object,
+            (value) => Enable_HUD_Object = value,
+            I18n.Config_EnableHUDObject_Name
+        );
+        gmcm.AddBoolOption(
+            mod,
+            () => Enable_HUD_TerrainFeature,
+            (value) => Enable_HUD_TerrainFeature = value,
+            I18n.Config_EnableHUDTerrainFeature_Name
         );
         gmcm.AddTextOption(
             mod,

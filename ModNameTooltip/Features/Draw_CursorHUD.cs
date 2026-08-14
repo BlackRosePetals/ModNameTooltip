@@ -63,6 +63,8 @@ public sealed class Draw_CursorHUD
 
     private bool TryMatchNPC(ICursorPosition cursor, GameLocation location)
     {
+        if (!ModEntry.config.Enable_HUD_NPC)
+            return false;
         Rectangle searchBounds = new((int)cursor.Tile.X * 64, (int)cursor.Tile.Y * 64, 64, 128);
         foreach (NPC character in location.characters)
         {
@@ -86,6 +88,8 @@ public sealed class Draw_CursorHUD
 
     private bool TryMatchFarmAnimal(ICursorPosition cursor, GameLocation location)
     {
+        if (!ModEntry.config.Enable_HUD_FarmAnimal)
+            return false;
         foreach (FarmAnimal farmAnimal in location.animals.Values)
         {
             if (farmAnimal.GetCursorPetBoundingBox().Contains(cursor.AbsolutePixels))
@@ -110,6 +114,8 @@ public sealed class Draw_CursorHUD
 
     private bool TryMatchObject(ICursorPosition cursor, GameLocation location)
     {
+        if (!ModEntry.config.Enable_HUD_Object)
+            return false;
         if (location.objects.TryGetValue(cursor.Tile, out SObject? obj))
         {
             if (hoveredObject.TryGetTarget(out SObject? target) && target == obj)
@@ -150,6 +156,8 @@ public sealed class Draw_CursorHUD
 
     private bool TryMatchTerrainFeature(ICursorPosition cursor, GameLocation location)
     {
+        if (!ModEntry.config.Enable_HUD_TerrainFeature)
+            return false;
         if (location.terrainFeatures.TryGetValue(cursor.Tile, out TerrainFeature? terrain))
         {
             if (hoveredTerrain.TryGetTarget(out TerrainFeature? target) && target == terrain)
@@ -159,21 +167,13 @@ public sealed class Draw_CursorHUD
             if (ModEntry.modNameAPI.TryGetModName(terrain, out IModNameInfo? modName))
             {
                 if (terrain is HoeDirt dirt && dirt.crop is Crop crop)
-                {
                     hoveredName = ItemRegistry.GetDataOrErrorItem(crop.netSeedIndex.Value).DisplayName;
-                }
                 else if (terrain is Tree tree)
-                {
                     hoveredName = GetWildTreeName(tree);
-                }
                 else if (terrain is FruitTree fruitTree)
-                {
                     hoveredName = TokenParser.ParseText(fruitTree.GetData()?.DisplayName ?? fruitTree.treeId.Value);
-                }
                 else
-                {
                     hoveredName = $"{terrain.GetType().Name}[{cursor.Tile}]";
-                }
             }
             hoveredModName = modName;
             CalculateSizes();
