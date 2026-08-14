@@ -37,15 +37,15 @@ public sealed class ModConfig
             {
                 field = value;
                 if (string.IsNullOrEmpty(field))
-                    Color_Modded_Parsed = null;
+                    Color_Mod_Parsed = null;
                 else
-                    Color_Modded_Parsed = Utility.StringToColor(field);
+                    Color_Mod_Parsed = Utility.StringToColor(field);
             }
         }
     } = null;
 
     internal Color? Color_SDV_Parsed = null;
-    internal Color? Color_Modded_Parsed = null;
+    internal Color? Color_Mod_Parsed = null;
 
     public void Register(IManifest mod, IGenericModConfigMenuApi? gmcm)
     {

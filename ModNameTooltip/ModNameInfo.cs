@@ -25,7 +25,12 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo) : IModNameInfo
             ?? ModInfo?.Manifest.Name
             ?? ModId;
 
-    public Color ModNameColor => (isStardew ? colorTriadic1 : colorTriadic2) ?? Color.SlateBlue;
+    public Color ModNameColor =>
+        (
+            isStardew
+                ? (ModEntry.config.Color_SDV_Parsed ?? colorTriadic1)
+                : (ModEntry.config.Color_Mod_Parsed ?? colorTriadic2)
+        ) ?? Color.SlateBlue;
 
     public static ModNameInfo Make(string modId)
     {

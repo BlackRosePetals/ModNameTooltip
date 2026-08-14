@@ -1,3 +1,15 @@
 {
-  "hud.farm-animal": "{{name}} ({{kind}})"
+  "hud.farm-animal": "{{name}} ({{kind}})",
+  "config.Enable_Tooltip.name": "启用：物品提示",
+  "config.Enable_Tooltip.desc": "启用物品提示上的模组名",
+  "config.Enable_HUD.name": "启用：HUD",
+  "config.Enable_HUD.desc": "启用此模组提供的HUD，用于显示光标下对象的模组名",
+  "config.Enable_HUD_NPC.name": "- 角色",
+  "config.Enable_HUD_FarmAnimal.name": "- 牲畜",
+  "config.Enable_HUD_Object.name": "- 物品",
+  "config.Enable_HUD_TerrainFeature.name": "- 农作物/树/果树",
+  "config.Color_SDV.name": "颜色：星露谷",
+  "config.Color_SDV.desc": "十六进制颜色码，用于显示'星露谷物语'的颜色",
+  "config.Color_Mod.name": "颜色：模组",
+  "config.Color_Mod.desc": "十六进制颜色码，用于显示模组名的颜色",
 }
