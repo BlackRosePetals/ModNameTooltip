@@ -1,3 +1,11 @@
 {
-  "hud.farm-animal": "{{name}} ({{kind}})"
+  "hud.farm-animal": "{{name}} ({{kind}})",
+  "config.Enable_Tooltip.name": "Enable: Tooltip",
+  "config.Enable_Tooltip.desc": "Enable mod names on item tooltips.",
+  "config.Enable_HUD.name": "Enable: HUD",
+  "config.Enable_HUD.desc": "Enable mod names on HUD that appears for items/NPC/FarmAnimals.",
+  "config.Color_SDV.name": "Color: Stardew",
+  "config.Color_SDV.desc": "Hex color for Stardew Valley in tooltips and HUD",
+  "config.Color_Mod.name": "Color: Mod",
+  "config.Color_Mod.desc": "Hex color for mod names in tooltips and HUD",
 }

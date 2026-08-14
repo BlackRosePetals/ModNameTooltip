@@ -1,7 +1,9 @@
+global using SObject = StardewValley.Object;
 using System.Diagnostics;
 using HarmonyLib;
 using Microsoft.Xna.Framework;
 using ModNameTooltip.Features;
+using ModNameTooltip.Integration;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
@@ -24,12 +26,17 @@ public sealed class ModEntry : Mod
     public const string Asset_ModNames = $"{ModId}/ModNames";
 
     internal static readonly Harmony harmony = new(ModId);
+
     internal static readonly List<TraceContext> traceCtx = [];
     internal static readonly Dictionary<string, TraceContext> itemTypeToTraceCtx = [];
     internal static TraceContext npcTraceCtx = null!;
     internal static TraceContext farmAnimalTraceCtx = null!;
+    internal static TraceContext cropTraceCtx = null!;
+    internal static TraceContext wildTreeTraceCtx = null!;
+    internal static TraceContext fruitTreeTraceCtx = null!;
+
     internal static readonly ModNameAPI modNameAPI = new();
-    internal static readonly PerScreen<Draw_CharacterHUD> drawChracterHud = new(() => new(Context.ScreenId));
+    internal static readonly PerScreen<Draw_CursorHUD> drawChracterHud = new(() => new(Context.ScreenId));
     internal static Color? menuColor = null;
 
     public override void Entry(IModHelper helper)
@@ -60,6 +67,7 @@ public sealed class ModEntry : Mod
 
         help.Events.Content.AssetReady += OnAssetReady;
         help.Events.Content.AssetRequested += OnAssetRequested;
+        help.Events.GameLoop.GameLaunched += OnGameLaunched;
         help.Events.GameLoop.SaveLoaded += OnSaveLoaded;
         help.Events.GameLoop.UpdateTicked += OnUpdateTicked;
 
@@ -77,12 +85,23 @@ public sealed class ModEntry : Mod
         // special handling for walls and floors
         AddTraceCtxForWallsAndFloors();
 
-        AddCharacterTraceCtx();
+        npcTraceCtx = AddTraceCtx("Data/Characters");
+        farmAnimalTraceCtx = AddTraceCtx("Data/FarmAnimals");
+        cropTraceCtx = AddTraceCtx("Data/Crops");
+        wildTreeTraceCtx = AddTraceCtx("Data/WildTrees");
+        fruitTreeTraceCtx = AddTraceCtx("Data/FruitTrees");
 
         help.ConsoleCommands.Add("mnt-print", "Print currently found keys", ConsoleDebugPrint);
 
         Patch_HoverText.Toggle();
-        Patch_SMAPIGetFromNamespacedId.Toggle();
+    }
+
+    private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
+    {
+        config.Register(
+            ModManifest,
+            Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu")
+        );
     }
 
     private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
@@ -183,12 +202,11 @@ public sealed class ModEntry : Mod
         traceCtx.Add(ctx);
     }
 
-    private static void AddCharacterTraceCtx()
+    private static TraceContext AddTraceCtx(string assetName)
     {
-        npcTraceCtx = new(help.GameContent.ParseAssetName("Data/Characters"));
-        traceCtx.Add(npcTraceCtx);
-        farmAnimalTraceCtx = new(help.GameContent.ParseAssetName("Data/FarmAnimals"));
-        traceCtx.Add(farmAnimalTraceCtx);
+        TraceContext ctx = new(help.GameContent.ParseAssetName(assetName));
+        traceCtx.Add(ctx);
+        return ctx;
     }
 
     private static void AssetRequestedEventArgs_Edit_Prefix(
