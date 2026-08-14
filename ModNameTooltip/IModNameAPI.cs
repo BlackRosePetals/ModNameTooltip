@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewValley;
+using StardewValley.Buildings;
 using StardewValley.TerrainFeatures;
 
 namespace ModNameTooltip;
@@ -52,10 +53,19 @@ public interface IModNameAPI
     /// <item>FruitTree</item>
     /// </list>
     /// </summary>
-    /// <param name="character">The character to find mod name for</param>
+    /// <param name="terrainFeature">The terrain feature to find mod id for</param>
     /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
     /// <returns>True if the mod is found</returns>
-    bool TryGetModName(TerrainFeature terrainFeature, [NotNullWhen(true)] out IModNameInfo? modName);
+    bool TryGetModName(TerrainFeature? terrainFeature, [NotNullWhen(true)] out IModNameInfo? modName);
+
+    /// <summary>
+    /// Try and get info about which mod using a real building instance.
+    /// </list>
+    /// </summary>
+    /// <param name="building">The building mod name for</param>
+    /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
+    /// <returns>True if the mod is found</returns>
+    bool TryGetModName(Building? building, [NotNullWhen(true)] out IModNameInfo? modName);
 
     /// <summary>
     /// Try and get info about which mod added an item using the item id
@@ -112,4 +122,12 @@ public interface IModNameAPI
     /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
     /// <returns>True if the mod is found</returns>
     bool TryGetModName_FromFruitTreeId(string treeId, [NotNullWhen(true)] out IModNameInfo? modName);
+
+    /// <summary>
+    /// Try and get info about which mod added a building using the building id
+    /// </summary>
+    /// <param name="buildingId">The building id</param>
+    /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
+    /// <returns>True if the mod is found</returns>
+    bool TryGetModName_FromBuildingId(string buildingId, [NotNullWhen(true)] out IModNameInfo? modName);
 }

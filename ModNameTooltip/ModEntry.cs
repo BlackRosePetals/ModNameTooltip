@@ -35,6 +35,7 @@ public sealed class ModEntry : Mod
     internal static TraceContext cropTraceCtx = null!;
     internal static TraceContext wildTreeTraceCtx = null!;
     internal static TraceContext fruitTreeTraceCtx = null!;
+    internal static TraceContext buildingsTraceCtx = null!;
 
     internal static readonly ModNameAPI modNameAPI = new();
     internal static readonly PerScreen<Draw_CursorHUD> drawCursorHUD = new(() => new(Context.ScreenId));
@@ -93,6 +94,7 @@ public sealed class ModEntry : Mod
         cropTraceCtx = AddTraceCtx("Data/Crops");
         wildTreeTraceCtx = AddTraceCtx("Data/WildTrees");
         fruitTreeTraceCtx = AddTraceCtx("Data/FruitTrees");
+        buildingsTraceCtx = AddTraceCtx("Data/Buildings");
 
         help.ConsoleCommands.Add("mnt-print", "Print currently found keys", ConsoleDebugPrint);
 

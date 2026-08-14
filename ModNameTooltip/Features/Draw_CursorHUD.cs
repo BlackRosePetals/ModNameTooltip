@@ -1,9 +1,12 @@
 using HarmonyLib;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Buildings;
 using StardewValley.Characters;
+using StardewValley.GameData.Buildings;
 using StardewValley.Menus;
 using StardewValley.TerrainFeatures;
 using StardewValley.TokenizableStrings;
@@ -18,6 +21,7 @@ public sealed class Draw_CursorHUD(int screenId)
     private readonly WeakReference<FarmAnimal?> hoveredFarmAnimal = new(null);
     private readonly WeakReference<SObject?> hoveredObject = new(null);
     private readonly WeakReference<TerrainFeature?> hoveredTerrain = new(null);
+    private readonly WeakReference<Building?> hoveredBuilding = new(null);
 
     private void ClearWeakRefs()
     {
@@ -25,6 +29,7 @@ public sealed class Draw_CursorHUD(int screenId)
         hoveredFarmAnimal.SetTarget(null);
         hoveredObject.SetTarget(null);
         hoveredTerrain.SetTarget(null);
+        hoveredBuilding.SetTarget(null);
     }
 
     private IModNameInfo? hoveredModName;
@@ -36,75 +41,75 @@ public sealed class Draw_CursorHUD(int screenId)
 
     private readonly int screenId = screenId;
 
-    private bool TryMatchNPC(ICursorPosition cursor, GameLocation location)
+    private bool TryMatchNPC(Vector2 tile, GameLocation location)
     {
         if (!ModEntry.config.Enable_HUD_NPC)
             return false;
-        Rectangle searchBounds = new((int)cursor.Tile.X * 64, (int)cursor.Tile.Y * 64, 64, 128);
+        Rectangle searchBounds = new((int)tile.X * 64, (int)tile.Y * 64, 64, 128);
         foreach (NPC character in location.characters)
         {
-            if (character.GetBoundingBox().Intersects(searchBounds))
+            if (character.IsInvisible)
+                continue;
+            if (!character.GetBoundingBox().Intersects(searchBounds))
+                continue;
+            if (hoveredNPC.TryGetTarget(out NPC? target) && target == character)
+                return true;
+            ClearWeakRefs();
+            hoveredNPC.SetTarget(character);
+            if (ModEntry.modNameAPI.TryGetModName(character, out IModNameInfo? modName))
             {
-                if (hoveredNPC.TryGetTarget(out NPC? target) && target == character)
-                    return true;
-                ClearWeakRefs();
-                hoveredNPC.SetTarget(character);
-                if (ModEntry.modNameAPI.TryGetModName(character, out IModNameInfo? modName))
+                if (character is Pet pet)
                 {
-                    if (character is Pet pet)
-                    {
-                        hoveredName = I18n.Hud_FarmAnimal(
-                            string.IsNullOrEmpty(pet.displayName) ? pet.Name : pet.displayName,
-                            TokenParser.ParseText(pet.GetPetData()?.DisplayName)
-                        );
-                    }
-                    else
-                    {
-                        hoveredName = string.IsNullOrEmpty(character.displayName)
-                            ? character.Name
-                            : character.displayName;
-                    }
-                    hoveredModName = modName;
-                    CalculateSizes();
-                    return true;
+                    hoveredName = I18n.Hud_FarmAnimal(
+                        string.IsNullOrEmpty(pet.displayName) ? pet.Name : pet.displayName,
+                        TokenParser.ParseText(pet.GetPetData()?.DisplayName)
+                    );
                 }
+                else
+                {
+                    hoveredName = string.IsNullOrEmpty(character.displayName) ? character.Name : character.displayName;
+                }
+                hoveredModName = modName;
+                CalculateSizes();
             }
+            return true;
         }
+        hoveredNPC.SetTarget(null);
         return false;
     }
 
-    private bool TryMatchFarmAnimal(ICursorPosition cursor, GameLocation location)
+    private bool TryMatchFarmAnimal(Vector2 tile, GameLocation location)
     {
         if (!ModEntry.config.Enable_HUD_FarmAnimal)
             return false;
         foreach (FarmAnimal farmAnimal in location.animals.Values)
         {
-            if (farmAnimal.GetCursorPetBoundingBox().Contains(cursor.AbsolutePixels))
+            if (!farmAnimal.GetCursorPetBoundingBox().Contains((int)tile.X * 64, (int)tile.Y * 64))
+                continue;
+            if (hoveredFarmAnimal.TryGetTarget(out FarmAnimal? target) && target == farmAnimal)
+                return true;
+            ClearWeakRefs();
+            hoveredFarmAnimal.SetTarget(farmAnimal);
+            if (ModEntry.modNameAPI.TryGetModName(farmAnimal, out IModNameInfo? modName))
             {
-                if (hoveredFarmAnimal.TryGetTarget(out FarmAnimal? target) && target == farmAnimal)
-                    return true;
-                ClearWeakRefs();
-                hoveredFarmAnimal.SetTarget(farmAnimal);
-                if (ModEntry.modNameAPI.TryGetModName(farmAnimal, out IModNameInfo? modName))
-                {
-                    hoveredModName = modName;
-                    hoveredName = I18n.Hud_FarmAnimal(
-                        string.IsNullOrEmpty(farmAnimal.displayName) ? farmAnimal.Name : farmAnimal.displayName,
-                        farmAnimal.displayType
-                    );
-                    CalculateSizes();
-                    return true;
-                }
+                hoveredModName = modName;
+                hoveredName = I18n.Hud_FarmAnimal(
+                    string.IsNullOrEmpty(farmAnimal.displayName) ? farmAnimal.Name : farmAnimal.displayName,
+                    farmAnimal.displayType
+                );
+                CalculateSizes();
             }
+            return true;
         }
+        hoveredFarmAnimal.SetTarget(null);
         return false;
     }
 
-    private bool TryMatchObject(ICursorPosition cursor, GameLocation location)
+    private bool TryMatchObject(Vector2 tile, GameLocation location)
     {
         if (!ModEntry.config.Enable_HUD_Object)
             return false;
-        if (location.objects.TryGetValue(cursor.Tile, out SObject? obj))
+        if (location.objects.TryGetValue(tile, out SObject? obj))
         {
             if (hoveredObject.TryGetTarget(out SObject? target) && target == obj)
                 return true;
@@ -115,8 +120,8 @@ public sealed class Draw_CursorHUD(int screenId)
                 hoveredName = obj.DisplayName;
                 hoveredModName = modName;
                 CalculateSizes();
-                return true;
             }
+            return true;
         }
         hoveredObject.SetTarget(null);
         return false;
@@ -142,11 +147,11 @@ public sealed class Draw_CursorHUD(int screenId)
         return tree.treeType.Value.ToString();
     }
 
-    private bool TryMatchTerrainFeature(ICursorPosition cursor, GameLocation location)
+    private bool TryMatchTerrainFeature(Vector2 tile, GameLocation location)
     {
         if (!ModEntry.config.Enable_HUD_TerrainFeature)
             return false;
-        if (location.terrainFeatures.TryGetValue(cursor.Tile, out TerrainFeature? terrain))
+        if (location.terrainFeatures.TryGetValue(tile, out TerrainFeature? terrain))
         {
             if (hoveredTerrain.TryGetTarget(out TerrainFeature? target) && target == terrain)
                 return true;
@@ -161,12 +166,37 @@ public sealed class Draw_CursorHUD(int screenId)
                 else if (terrain is FruitTree fruitTree)
                     hoveredName = TokenParser.ParseText(fruitTree.GetData()?.DisplayName ?? fruitTree.treeId.Value);
                 else
-                    hoveredName = $"{terrain.GetType().Name}[{cursor.Tile}]";
+                    hoveredName = $"{terrain.GetType().Name}[{tile}]";
             }
             hoveredModName = modName;
             CalculateSizes();
             return true;
         }
+        hoveredTerrain.SetTarget(null);
+        return false;
+    }
+
+    private bool TryMatchBuilding(Vector2 tile, GameLocation location)
+    {
+        if (!ModEntry.config.Enable_HUD_Building)
+            return false;
+        foreach (Building building in location.buildings)
+        {
+            if (!building.occupiesTile(tile) || building.GetData() is not BuildingData data)
+                continue;
+            if (hoveredBuilding.TryGetTarget(out Building? target) && target == building)
+                return true;
+            ClearWeakRefs();
+            hoveredBuilding.SetTarget(building);
+            if (ModEntry.modNameAPI.TryGetModName(building, out IModNameInfo? modName))
+            {
+                hoveredName = TokenParser.ParseText(data.Name);
+                hoveredModName = modName;
+                CalculateSizes();
+            }
+            return true;
+        }
+        hoveredBuilding.SetTarget(null);
         return false;
     }
 
@@ -188,12 +218,13 @@ public sealed class Draw_CursorHUD(int screenId)
             && Game1.currentLocation.currentEvent == null
         )
         {
-            ICursorPosition newPos = e.NewPosition;
+            Vector2 tile = e.NewPosition.Tile;
             if (
-                TryMatchNPC(newPos, location)
-                || TryMatchFarmAnimal(newPos, location)
-                || TryMatchObject(newPos, location)
-                || TryMatchTerrainFeature(newPos, location)
+                TryMatchNPC(tile, location)
+                || TryMatchFarmAnimal(tile, location)
+                || TryMatchObject(tile, location)
+                || TryMatchTerrainFeature(tile, location)
+                || TryMatchBuilding(tile, location)
             )
             {
                 return;

@@ -14,6 +14,7 @@ public sealed class ModConfig
     public bool Enable_HUD_FarmAnimal { get; set; } = true;
     public bool Enable_HUD_Object { get; set; } = true;
     public bool Enable_HUD_TerrainFeature { get; set; } = true;
+    public bool Enable_HUD_Building { get; set; } = true;
     public string? Color_SDV
     {
         get;
@@ -91,6 +92,12 @@ public sealed class ModConfig
             mod,
             () => Enable_HUD_TerrainFeature,
             (value) => Enable_HUD_TerrainFeature = value,
+            I18n.Config_EnableHUDTerrainFeature_Name
+        );
+        gmcm.AddBoolOption(
+            mod,
+            () => Enable_HUD_Building,
+            (value) => Enable_HUD_Building = value,
             I18n.Config_EnableHUDTerrainFeature_Name
         );
         gmcm.AddTextOption(

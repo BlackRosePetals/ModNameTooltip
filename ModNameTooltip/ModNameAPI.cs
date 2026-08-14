@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using StardewValley;
+using StardewValley.Buildings;
 using StardewValley.Characters;
 using StardewValley.ItemTypeDefinitions;
 using StardewValley.TerrainFeatures;
@@ -63,6 +64,13 @@ public sealed class ModNameAPI : IModNameAPI
     }
 
     // <inheritdoc/>
+    public bool TryGetModName(Building? building, [NotNullWhen(true)] out IModNameInfo? modName)
+    {
+        modName = null;
+        return building != null && TryGetModName_FromBuildingId(building.buildingType.Value, out modName);
+    }
+
+    // <inheritdoc/>
     public bool TryGetModName_FromItemId(string itemId, [NotNullWhen(true)] out IModNameInfo? modName)
     {
         modName = null;
@@ -112,6 +120,12 @@ public sealed class ModNameAPI : IModNameAPI
     public bool TryGetModName_FromFruitTreeId(string treeId, [NotNullWhen(true)] out IModNameInfo? modName)
     {
         return TryGetModNameFromCtx(ModEntry.fruitTreeTraceCtx, treeId, out modName);
+    }
+
+    // <inheritdoc/>
+    public bool TryGetModName_FromBuildingId(string buildingId, [NotNullWhen(true)] out IModNameInfo? modName)
+    {
+        return TryGetModNameFromCtx(ModEntry.buildingsTraceCtx, buildingId, out modName);
     }
 
     private static bool TryGetModNameFromCtx(TraceContext ctx, string id, [NotNullWhen(true)] out IModNameInfo? modName)
