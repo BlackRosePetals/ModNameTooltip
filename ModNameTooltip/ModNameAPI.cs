@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using StardewValley;
+using StardewValley.Characters;
 using StardewValley.ItemTypeDefinitions;
 using StardewValley.TerrainFeatures;
 
@@ -27,7 +28,11 @@ public sealed class ModNameAPI : IModNameAPI
     public bool TryGetModName(Character? character, [NotNullWhen(true)] out IModNameInfo? modName)
     {
         modName = null;
-        if (character is NPC)
+        if (character is Pet pet)
+        {
+            return TryGetModName_FromPetType(pet.petType.Value, out modName);
+        }
+        else if (character is NPC)
         {
             return TryGetModName_FromNpcName(character.Name, out modName);
         }
@@ -77,6 +82,12 @@ public sealed class ModNameAPI : IModNameAPI
     public bool TryGetModName_FromNpcName(string npcName, [NotNullWhen(true)] out IModNameInfo? modName)
     {
         return TryGetModNameFromCtx(ModEntry.npcTraceCtx, npcName, out modName);
+    }
+
+    // <inheritdoc/>
+    public bool TryGetModName_FromPetType(string petType, [NotNullWhen(true)] out IModNameInfo? modName)
+    {
+        return TryGetModNameFromCtx(ModEntry.petTraceCtx, petType, out modName);
     }
 
     // <inheritdoc/>

@@ -31,6 +31,7 @@ public sealed class ModEntry : Mod
     internal static readonly Dictionary<string, TraceContext> itemTypeToTraceCtx = [];
     internal static TraceContext npcTraceCtx = null!;
     internal static TraceContext farmAnimalTraceCtx = null!;
+    internal static TraceContext petTraceCtx = null!;
     internal static TraceContext cropTraceCtx = null!;
     internal static TraceContext wildTreeTraceCtx = null!;
     internal static TraceContext fruitTreeTraceCtx = null!;
@@ -88,6 +89,7 @@ public sealed class ModEntry : Mod
 
         npcTraceCtx = AddTraceCtx("Data/Characters");
         farmAnimalTraceCtx = AddTraceCtx("Data/FarmAnimals");
+        petTraceCtx = AddTraceCtx("Data/Pets");
         cropTraceCtx = AddTraceCtx("Data/Crops");
         wildTreeTraceCtx = AddTraceCtx("Data/WildTrees");
         fruitTreeTraceCtx = AddTraceCtx("Data/FruitTrees");

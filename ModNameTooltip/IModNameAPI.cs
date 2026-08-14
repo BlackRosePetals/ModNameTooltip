@@ -74,6 +74,14 @@ public interface IModNameAPI
     bool TryGetModName_FromNpcName(string npcName, [NotNullWhen(true)] out IModNameInfo? modName);
 
     /// <summary>
+    /// Try and get info about which mod added a pet using the pet type
+    /// </summary>
+    /// <param name="itemId">The item id, qualified or unqualified</param>
+    /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
+    /// <returns>True if the mod is found</returns>
+    bool TryGetModName_FromPetType(string petType, [NotNullWhen(true)] out IModNameInfo? modName);
+
+    /// <summary>
     /// Try and get info about which mod added a farm animal using the farm animal type
     /// </summary>
     /// <param name="farmAnimalType">The farm animal type</param>

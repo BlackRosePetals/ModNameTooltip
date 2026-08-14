@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Characters;
 using StardewValley.Menus;
 using StardewValley.TerrainFeatures;
 using StardewValley.TokenizableStrings;
@@ -50,8 +51,20 @@ public sealed class Draw_CursorHUD(int screenId)
                 hoveredNPC.SetTarget(character);
                 if (ModEntry.modNameAPI.TryGetModName(character, out IModNameInfo? modName))
                 {
+                    if (character is Pet pet)
+                    {
+                        hoveredName = I18n.Hud_FarmAnimal(
+                            string.IsNullOrEmpty(pet.displayName) ? pet.Name : pet.displayName,
+                            TokenParser.ParseText(pet.GetPetData()?.DisplayName)
+                        );
+                    }
+                    else
+                    {
+                        hoveredName = string.IsNullOrEmpty(character.displayName)
+                            ? character.Name
+                            : character.displayName;
+                    }
                     hoveredModName = modName;
-                    hoveredName = string.IsNullOrEmpty(character.displayName) ? character.Name : character.displayName;
                     CalculateSizes();
                     return true;
                 }
@@ -77,7 +90,7 @@ public sealed class Draw_CursorHUD(int screenId)
                     hoveredModName = modName;
                     hoveredName = I18n.Hud_FarmAnimal(
                         string.IsNullOrEmpty(farmAnimal.displayName) ? farmAnimal.Name : farmAnimal.displayName,
-                        farmAnimal.type.Value
+                        farmAnimal.displayType
                     );
                     CalculateSizes();
                     return true;
