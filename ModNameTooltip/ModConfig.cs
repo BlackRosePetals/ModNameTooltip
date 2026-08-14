@@ -84,6 +84,12 @@ public sealed class ModConfig
         );
         gmcm.AddBoolOption(
             mod,
+            () => Enable_HUD_Building,
+            (value) => Enable_HUD_Building = value,
+            I18n.Config_EnableHUDBuilding_Name
+        );
+        gmcm.AddBoolOption(
+            mod,
             () => Enable_HUD_Object,
             (value) => Enable_HUD_Object = value,
             I18n.Config_EnableHUDObject_Name
@@ -92,12 +98,6 @@ public sealed class ModConfig
             mod,
             () => Enable_HUD_TerrainFeature,
             (value) => Enable_HUD_TerrainFeature = value,
-            I18n.Config_EnableHUDTerrainFeature_Name
-        );
-        gmcm.AddBoolOption(
-            mod,
-            () => Enable_HUD_Building,
-            (value) => Enable_HUD_Building = value,
             I18n.Config_EnableHUDTerrainFeature_Name
         );
         gmcm.AddTextOption(

@@ -66,7 +66,7 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo) : IModNameInfo
         colorTriadic2 = null;
     }
 
-    internal static void UpdateMenuColor()
+    internal static void MaybeUpdateMenuColor()
     {
         if (Game1.mouseCursors == null || colorMenu != null)
             return;

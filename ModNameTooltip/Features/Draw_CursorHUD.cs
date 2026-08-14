@@ -1,6 +1,5 @@
 using HarmonyLib;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -17,6 +16,7 @@ public sealed class Draw_CursorHUD(int screenId)
 {
     private const int BORDER_WIDTH = 16;
 
+    private Vector2 lastCheckedTile = -Vector2.One;
     private readonly WeakReference<NPC?> hoveredNPC = new(null);
     private readonly WeakReference<FarmAnimal?> hoveredFarmAnimal = new(null);
     private readonly WeakReference<SObject?> hoveredObject = new(null);
@@ -200,25 +200,28 @@ public sealed class Draw_CursorHUD(int screenId)
         return false;
     }
 
-    private void ClearHovered()
+    internal void ClearHovered()
     {
         ClearWeakRefs();
         hoveredName = null;
         hoveredModName = null;
+        lastCheckedTile = -Vector2.One;
         CalculateSizes();
     }
 
-    internal void OnCursorMoved(CursorMovedEventArgs e)
+    internal void CheckTile(Vector2 tile)
     {
+        if (!ModEntry.config.Enable_HUD || screenId != Context.ScreenId)
+            return;
+        if (lastCheckedTile == tile)
+            return;
         if (
-            ModEntry.config.Enable_HUD
-            && screenId == Context.ScreenId
-            && Game1.currentLocation is GameLocation location
+            Game1.currentLocation is GameLocation location
             && Game1.activeClickableMenu == null
             && Game1.currentLocation.currentEvent == null
         )
         {
-            Vector2 tile = e.NewPosition.Tile;
+            lastCheckedTile = tile;
             if (
                 TryMatchNPC(tile, location)
                 || TryMatchFarmAnimal(tile, location)

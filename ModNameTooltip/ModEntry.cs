@@ -7,6 +7,7 @@ using ModNameTooltip.Integration;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
+using StardewValley;
 
 namespace ModNameTooltip;
 
@@ -71,6 +72,7 @@ public sealed class ModEntry : Mod
         help.Events.Content.AssetRequested += OnAssetRequested;
         help.Events.GameLoop.GameLaunched += OnGameLaunched;
         help.Events.GameLoop.UpdateTicked += OnUpdateTicked;
+        help.Events.Player.Warped += OnWarped;
         help.Events.Input.CursorMoved += OnCursorMoved;
         help.Events.Display.RenderedHud += OnRenderHud;
 
@@ -101,9 +103,19 @@ public sealed class ModEntry : Mod
         Patch_HoverText.Toggle();
     }
 
+    private void OnWarped(object? sender, WarpedEventArgs e)
+    {
+        drawCursorHUD.Value.ClearHovered();
+    }
+
     private void OnCursorMoved(object? sender, CursorMovedEventArgs e)
     {
-        drawCursorHUD.Value.OnCursorMoved(e);
+        drawCursorHUD.Value.CheckTile(e.NewPosition.Tile);
+    }
+
+    private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)
+    {
+        ModNameInfo.MaybeUpdateMenuColor();
     }
 
     private void OnRenderHud(object? sender, RenderedHudEventArgs e)
@@ -169,11 +181,6 @@ public sealed class ModEntry : Mod
         {
             ctx.PopulateKeyToMod(e.NameWithoutLocale);
         }
-    }
-
-    private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)
-    {
-        ModNameInfo.UpdateMenuColor();
     }
 
     private static void AddItemTraceCtx(string itemTypeId, string assetNameStr)
