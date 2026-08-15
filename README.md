@@ -76,7 +76,7 @@ private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
             (asset) =>
             {
                 IDictionary<string, string> data = asset.AsDictionary<string, string>().Data;
-                data[ModManifest.UniqueID] = Helper.Translation.Get("mod*name");
+                data[ModManifest.UniqueID] = Helper.Translation.Get("mod.name");
             },
             AssetEditPriority.Default
         );
