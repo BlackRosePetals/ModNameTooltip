@@ -150,7 +150,7 @@ public sealed class ModEntry : Mod
 
     private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
     {
-        if (e.Name.IsEquivalentTo(Asset_ModNames))
+        if (e.NameWithoutLocale.IsEquivalentTo(Asset_ModNames))
         {
             string stringsAsset = Path.Combine("i18n", e.Name.LanguageCode.ToString() ?? "default", "mod-names.json");
             if (File.Exists(Path.Combine(help.DirectoryPath, stringsAsset)))

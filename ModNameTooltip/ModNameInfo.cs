@@ -20,10 +20,9 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo) : IModNameInfo
     private readonly bool isStardew = ModId == STARDEW_VALLEY;
 
     public string ModName =>
-        field ??=
-            Game1.content.LoadStringReturnNullIfNotFound($"{ModEntry.Asset_ModNames}:{ModId}")
-            ?? ModInfo?.Manifest.Name
-            ?? ModId;
+        Game1.content.LoadStringReturnNullIfNotFound($"{ModEntry.Asset_ModNames}:{ModId}")
+        ?? ModInfo?.Manifest.Name
+        ?? ModId;
 
     public Color ModNameColor =>
         (
