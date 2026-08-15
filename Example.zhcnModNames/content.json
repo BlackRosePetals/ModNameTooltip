@@ -1,0 +1,13 @@
+{
+  "Format": "2.8.0",
+  "Changes": [
+    {
+      "Action": "EditData",
+      "Target": "mushymato.ModNameTooltip/ModNames",
+      "Entries": {
+        "Cornucopia.MoreCrops": "聚宝盆-更多作物"
+      },
+      "TargetLocale": "zh-CN"
+    }
+  ]
+}

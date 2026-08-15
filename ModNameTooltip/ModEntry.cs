@@ -74,6 +74,7 @@ public sealed class ModEntry : Mod
         help.Events.GameLoop.UpdateTicked += OnUpdateTicked;
         help.Events.Player.Warped += OnWarped;
         help.Events.Input.CursorMoved += OnCursorMoved;
+        help.Events.Input.ButtonsChanged += OnButtonsChanged;
         help.Events.Display.RenderedHud += OnRenderHud;
 
         AddItemTraceCtx("(O)", "Data/Objects");
@@ -111,6 +112,18 @@ public sealed class ModEntry : Mod
     private void OnCursorMoved(object? sender, CursorMovedEventArgs e)
     {
         drawCursorHUD.Value.CheckTile(e.NewPosition.Tile);
+    }
+
+    private void OnButtonsChanged(object? sender, ButtonsChangedEventArgs e)
+    {
+        if (config.Toggle_HUD.JustPressed())
+        {
+            config.SetEnable_HUD(!config.Enable_HUD);
+        }
+        if (config.Toggle_Tooltip.JustPressed())
+        {
+            config.SetEnable_Tooltip(!config.Enable_Tooltip);
+        }
     }
 
     private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)

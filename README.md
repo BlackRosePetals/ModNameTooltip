@@ -27,12 +27,14 @@ This supports:
 ## Configuration
 
 - `Enable_Tooltip`: Enable mod names in item tooltips
+- `Toggle_Tooltip`: Set a keybinding to enable/disable item tooltips
 - `Enable_HUD`: Enable mod name HUD
     - `Enable_HUD_NPC`: Enable NPCs on the mod name HUD
     - `Enable_HUD_FarmAnimal`: Enable Farm Animals on the mod name HUD
     - `Enable_HUD_Object`: Enable Objects on the mod name HUD
     - `Enable_HUD_TerrainFeature`: Enable Crops/Trees/FruitTrees on the mod name HUD
     - `Enable_HUD_Building`: Enable Buildings on the mod name HUD
+- `Toggle_HUD`: Set a keybinding to enable/disable HUD
 - `Color_SDV`: Hex color code, text color for 'Stardew Valley' in tooltips and HUD
 - `Color_Mod`: Hex color code, text color for mod names in tooltips and HUD
 

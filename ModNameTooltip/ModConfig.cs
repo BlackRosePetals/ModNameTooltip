@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using ModNameTooltip.Features;
 using ModNameTooltip.Integration;
 using StardewModdingAPI;
+using StardewModdingAPI.Utilities;
 using StardewValley;
 
 namespace ModNameTooltip;
@@ -9,7 +10,9 @@ namespace ModNameTooltip;
 public sealed class ModConfig
 {
     public bool Enable_Tooltip { get; set; } = true;
+    public KeybindList Toggle_Tooltip = new();
     public bool Enable_HUD { get; set; } = true;
+    public KeybindList Toggle_HUD = new();
     public bool Enable_HUD_NPC { get; set; } = true;
     public bool Enable_HUD_FarmAnimal { get; set; } = true;
     public bool Enable_HUD_Object { get; set; } = true;
@@ -57,23 +60,30 @@ public sealed class ModConfig
         gmcm.AddBoolOption(
             mod,
             () => Enable_Tooltip,
-            (value) =>
-            {
-                if (Enable_Tooltip != value)
-                {
-                    Enable_Tooltip = value;
-                    Patch_HoverText.Toggle();
-                }
-            },
+            SetEnable_Tooltip,
             I18n.Config_EnableTooltip_Name,
             I18n.Config_EnableTooltip_Desc
+        );
+        gmcm.AddKeybindList(
+            mod,
+            () => Toggle_Tooltip,
+            (value) => Toggle_Tooltip = value,
+            I18n.Config_ToggleTooltip_Name,
+            I18n.Config_ToggleTooltip_Desc
         );
         gmcm.AddBoolOption(
             mod,
             () => Enable_HUD,
-            (value) => Enable_HUD = value,
+            SetEnable_HUD,
             I18n.Config_EnableHUD_Name,
             I18n.Config_EnableHUD_Desc
+        );
+        gmcm.AddKeybindList(
+            mod,
+            () => Toggle_HUD,
+            (value) => Toggle_HUD = value,
+            I18n.Config_ToggleHUD_Name,
+            I18n.Config_ToggleHUD_Desc
         );
         gmcm.AddBoolOption(mod, () => Enable_HUD_NPC, (value) => Enable_HUD_NPC = value, I18n.Config_EnableHUDNPC_Name);
         gmcm.AddBoolOption(
@@ -81,12 +91,6 @@ public sealed class ModConfig
             () => Enable_HUD_FarmAnimal,
             (value) => Enable_HUD_FarmAnimal = value,
             I18n.Config_EnableHUDFarmAnimal_Name
-        );
-        gmcm.AddBoolOption(
-            mod,
-            () => Enable_HUD_Building,
-            (value) => Enable_HUD_Building = value,
-            I18n.Config_EnableHUDBuilding_Name
         );
         gmcm.AddBoolOption(
             mod,
@@ -99,6 +103,12 @@ public sealed class ModConfig
             () => Enable_HUD_TerrainFeature,
             (value) => Enable_HUD_TerrainFeature = value,
             I18n.Config_EnableHUDTerrainFeature_Name
+        );
+        gmcm.AddBoolOption(
+            mod,
+            () => Enable_HUD_Building,
+            (value) => Enable_HUD_Building = value,
+            I18n.Config_EnableHUDBuilding_Name
         );
         gmcm.AddTextOption(
             mod,
@@ -116,11 +126,33 @@ public sealed class ModConfig
         );
     }
 
+    internal void SetEnable_Tooltip(bool value)
+    {
+        if (Enable_Tooltip != value)
+        {
+            Enable_Tooltip = value;
+            Patch_HoverText.Toggle();
+        }
+    }
+
+    internal void SetEnable_HUD(bool value)
+    {
+        if (Enable_HUD != value)
+            Enable_HUD = value;
+    }
+
     private void Reset()
     {
         ModConfig defaultConfig = new();
         Enable_Tooltip = defaultConfig.Enable_Tooltip;
+        Toggle_Tooltip = defaultConfig.Toggle_Tooltip;
         Enable_HUD = defaultConfig.Enable_HUD;
+        Toggle_HUD = defaultConfig.Toggle_HUD;
+        Enable_HUD_NPC = defaultConfig.Enable_HUD_NPC;
+        Enable_HUD_FarmAnimal = defaultConfig.Enable_HUD_FarmAnimal;
+        Enable_HUD_Object = defaultConfig.Enable_HUD_Object;
+        Enable_HUD_TerrainFeature = defaultConfig.Enable_HUD_TerrainFeature;
+        Enable_HUD_Building = defaultConfig.Enable_HUD_Building;
         Color_SDV = defaultConfig.Color_SDV;
         Color_Mod = defaultConfig.Color_Mod;
     }
