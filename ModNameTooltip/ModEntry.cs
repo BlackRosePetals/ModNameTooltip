@@ -27,7 +27,7 @@ public sealed class ModEntry : Mod
 
     internal static readonly Harmony harmony = new(ModId);
 
-    internal static readonly List<TraceContext> traceCtx = [];
+    internal static readonly Dictionary<IAssetName, TraceContext> traceCtx = [];
     internal static readonly Dictionary<string, TraceContext> itemTypeToTraceCtx = [];
     internal static readonly Dictionary<IAssetName, TraceContext> eventAssetToTraceCtx = [];
     internal static TraceContext npcTraceCtx = null!;
@@ -73,10 +73,11 @@ public sealed class ModEntry : Mod
         help.Events.Content.AssetRequested += OnAssetRequested;
         help.Events.GameLoop.GameLaunched += OnGameLaunched;
         help.Events.GameLoop.UpdateTicked += OnUpdateTicked;
+        help.Events.GameLoop.SaveLoaded += OnSaveLoaded;
         help.Events.Player.Warped += OnWarped;
         help.Events.Input.CursorMoved += OnCursorMoved;
         help.Events.Input.ButtonsChanged += OnButtonsChanged;
-        help.Events.Display.RenderedHud += OnRenderHud;
+        help.Events.Display.RenderedHud += OnRenderedHud;
 
         AddItemTraceCtx("(O)", "Data/Objects");
         AddItemTraceCtx("(BC)", "Data/BigCraftables");
@@ -106,9 +107,14 @@ public sealed class ModEntry : Mod
         Patch_HoverText.Toggle();
     }
 
+    private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
+    {
+        drawCursorHUD.Value.OnNewLocation(Game1.currentLocation);
+    }
+
     private void OnWarped(object? sender, WarpedEventArgs e)
     {
-        drawCursorHUD.Value.ClearHovered();
+        drawCursorHUD.Value.OnNewLocation(e.NewLocation);
     }
 
     private void OnCursorMoved(object? sender, CursorMovedEventArgs e)
@@ -138,9 +144,10 @@ public sealed class ModEntry : Mod
                 AddLocationEventTraceCtx(locationId);
             }
         }
+        drawCursorHUD.Value.OnUpdateTicked(e);
     }
 
-    private void OnRenderHud(object? sender, RenderedHudEventArgs e)
+    private void OnRenderedHud(object? sender, RenderedHudEventArgs e)
     {
         drawCursorHUD.Value.OnRenderedHud(e);
     }
@@ -160,7 +167,7 @@ public sealed class ModEntry : Mod
 
     private void ConsoleDebugPrint(string arg1, string[] arg2)
     {
-        foreach (TraceContext ctx in traceCtx)
+        foreach (TraceContext ctx in traceCtx.Values)
         {
             Log(ctx.TracedAsset.Name, LogLevel.Info);
             foreach ((string key, ModNameInfo modNameText) in ctx.KeyToMod)
@@ -184,7 +191,7 @@ public sealed class ModEntry : Mod
                 );
             return;
         }
-        foreach (TraceContext ctx in traceCtx)
+        foreach (TraceContext ctx in traceCtx.Values)
         {
             // do a bogus edit so that our prefix always happens bolb
             if (ctx.TracedAsset.IsEquivalentTo(e.NameWithoutLocale))
@@ -192,7 +199,7 @@ public sealed class ModEntry : Mod
         }
     }
 
-    private void BogusEdit(IAssetData data) { }
+    private static void BogusEdit(IAssetData data) { }
 
     private void OnAssetReady(object? sender, AssetReadyEventArgs e)
     {
@@ -201,14 +208,13 @@ public sealed class ModEntry : Mod
             ModNameInfo.ResetMenuColor();
             return;
         }
+        if (traceCtx.TryGetValue(e.NameWithoutLocale, out TraceContext? ctx))
+        {
+            ctx.PopulateKeyToMod(e.NameWithoutLocale);
+        }
         if (e.NameWithoutLocale.IsEquivalentTo("Data/Locations"))
         {
             dataLocationReadyTick = Game1.ticks;
-            return;
-        }
-        foreach (TraceContext ctx in traceCtx)
-        {
-            ctx.PopulateKeyToMod(e.NameWithoutLocale);
         }
     }
 
@@ -217,7 +223,7 @@ public sealed class ModEntry : Mod
         IAssetName assetName = help.GameContent.ParseAssetName(assetNameStr);
         TraceContext ctx = new(assetName);
         itemTypeToTraceCtx[itemTypeId] = ctx;
-        traceCtx.Add(ctx);
+        traceCtx[assetName] = ctx;
     }
 
     private static void AddTraceCtxForWallsAndFloors()
@@ -245,13 +251,13 @@ public sealed class ModEntry : Mod
         );
         itemTypeToTraceCtx["(WP)"] = ctx;
         itemTypeToTraceCtx["(FL)"] = ctx;
-        traceCtx.Add(ctx);
+        traceCtx[assetName] = ctx;
     }
 
     private static TraceContext AddTraceCtx(string assetName)
     {
         TraceContext ctx = new(help.GameContent.ParseAssetName(assetName));
-        traceCtx.Add(ctx);
+        traceCtx[ctx.TracedAsset] = ctx;
         return ctx;
     }
 
@@ -260,9 +266,20 @@ public sealed class ModEntry : Mod
         IAssetName assetName = help.GameContent.ParseAssetName($"Data/Events/{locationId}");
         if (eventAssetToTraceCtx.ContainsKey(assetName))
             return;
-        TraceContext ctx = new(assetName);
+        TraceContext ctx = new(
+            assetName,
+            static (ctx, eventId) =>
+            {
+                foreach ((string key, ModNameInfo? modName) in ctx.KeyToMod)
+                {
+                    if (Event.SplitPreconditions(key)[0] == eventId)
+                        return modName;
+                }
+                return ModNameInfo.STARDEW;
+            }
+        );
         eventAssetToTraceCtx[assetName] = ctx;
-        traceCtx.Add(ctx);
+        traceCtx[assetName] = ctx;
         help.GameContent.InvalidateCache(assetName);
     }
 
@@ -272,7 +289,7 @@ public sealed class ModEntry : Mod
         string? onBehalfOf
     )
     {
-        foreach (TraceContext ctx in traceCtx)
+        foreach (TraceContext ctx in traceCtx.Values)
         {
             ctx.HandleEdit(__instance.AssetInfo, __instance.Mod, __instance.LoadOperations, ref apply, onBehalfOf);
         }

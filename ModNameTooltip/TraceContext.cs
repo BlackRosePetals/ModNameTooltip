@@ -26,7 +26,6 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, stri
 
     private readonly Dictionary<string, ModNameInfo> keyToMod = [];
     public IReadOnlyDictionary<string, ModNameInfo> KeyToMod => keyToMod;
-    public int keyToModLastPopulated = -1;
 
     public bool TryGetModName(string key, [NotNullWhen(true)] out ModNameInfo? modName)
     {
@@ -38,9 +37,7 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, stri
 
     public void PopulateKeyToMod(IAssetName assetName)
     {
-        if (!TracedAsset.IsEquivalentTo(assetName))
-            return;
-        if (keyToModLastPopulated == Game1.ticks)
+        if (!TracedAsset.IsEquivalentTo(assetName) || tracedKeys == null)
             return;
 
         keyToMod.Clear();
@@ -56,8 +53,6 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, stri
 
         tracedKeys = null;
         tracedFrames.Clear();
-
-        keyToModLastPopulated = Game1.ticks;
     }
 
     public void HandleEdit(
@@ -192,7 +187,13 @@ public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, stri
     private static HashSet<string> CheckStringDict<TValue>(IAssetData asset)
     {
         IDictionary<string, TValue> data = asset.AsDictionary<string, TValue>().Data;
-        return data.Keys.ToHashSet();
+        HashSet<string> keySet = [];
+        foreach ((string key, TValue value) in data)
+        {
+            if (value != null)
+                keySet.Add(key);
+        }
+        return keySet;
     }
 
     private static readonly MethodInfo? CheckIdListInfo = typeof(TraceContext).GetMethod(

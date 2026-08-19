@@ -31,7 +31,7 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo) : IModNameInfo
                     ?? ModInfo?.Manifest.Name
                     ?? ModId;
             if (ModEntry.config.Display_ModSource && firstUpdateKey != null)
-                return string.Concat(modDisplayName, Environment.NewLine, "[", firstUpdateKey, "]");
+                return $"[{firstUpdateKey}] {modDisplayName}";
             return modDisplayName;
         }
     }

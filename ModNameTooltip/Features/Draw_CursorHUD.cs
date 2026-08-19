@@ -14,6 +14,8 @@ namespace ModNameTooltip.Features;
 
 public sealed class Draw_CursorHUD(int screenId)
 {
+    private const double EVENT_TIMER_LEN = 3500.0;
+    private const double TIMER_FADE = 500.0;
     private const int BORDER_WIDTH = 16;
 
     private Vector2 lastCheckedTile = -Vector2.One;
@@ -22,6 +24,10 @@ public sealed class Draw_CursorHUD(int screenId)
     private readonly WeakReference<SObject?> hoveredObject = new(null);
     private readonly WeakReference<TerrainFeature?> hoveredTerrain = new(null);
     private readonly WeakReference<Building?> hoveredBuilding = new(null);
+    private readonly WeakReference<Event?> eventTarget = new(null);
+    private IModNameInfo? currentLocationModName = null;
+
+    private double eventNameTimer = -1;
 
     private void ClearWeakRefs()
     {
@@ -71,8 +77,8 @@ public sealed class Draw_CursorHUD(int screenId)
                 }
                 hoveredModName = modName;
                 CalculateSizes();
+                return true;
             }
-            return true;
         }
         hoveredNPC.SetTarget(null);
         return false;
@@ -98,8 +104,8 @@ public sealed class Draw_CursorHUD(int screenId)
                     farmAnimal.displayType
                 );
                 CalculateSizes();
+                return true;
             }
-            return true;
         }
         hoveredFarmAnimal.SetTarget(null);
         return false;
@@ -120,8 +126,8 @@ public sealed class Draw_CursorHUD(int screenId)
                 hoveredName = obj.DisplayName;
                 hoveredModName = modName;
                 CalculateSizes();
+                return true;
             }
-            return true;
         }
         hoveredObject.SetTarget(null);
         return false;
@@ -167,10 +173,10 @@ public sealed class Draw_CursorHUD(int screenId)
                     hoveredName = TokenParser.ParseText(fruitTree.GetData()?.DisplayName ?? fruitTree.treeId.Value);
                 else
                     hoveredName = $"{terrain.GetType().Name}[{tile}]";
+                hoveredModName = modName;
+                CalculateSizes();
+                return true;
             }
-            hoveredModName = modName;
-            CalculateSizes();
-            return true;
         }
         hoveredTerrain.SetTarget(null);
         return false;
@@ -193,10 +199,52 @@ public sealed class Draw_CursorHUD(int screenId)
                 hoveredName = TokenParser.ParseText(data.Name);
                 hoveredModName = modName;
                 CalculateSizes();
+                return true;
             }
-            return true;
         }
         hoveredBuilding.SetTarget(null);
+        return false;
+    }
+
+    private bool TryMatchEvent()
+    {
+        if (
+            eventNameTimer == -1
+            && !Game1.globalFade
+            && Game1.currentLocation is GameLocation location
+            && location.currentEvent is Event sdvEvent
+        )
+        {
+            if (eventTarget.TryGetTarget(out Event? target) && target == sdvEvent)
+                return true;
+            if (
+                ModEntry.config.Enable_HUD_Event
+                && ModEntry.modNameAPI.TryGetModName(sdvEvent, out IModNameInfo? modName)
+            )
+            {
+                ModEntry.Log($"Event: '{sdvEvent.id}' @ '{location.NameOrUniqueName}'");
+                ClearWeakRefs();
+                eventTarget.SetTarget(sdvEvent);
+                eventNameTimer = EVENT_TIMER_LEN;
+                hoveredName = I18n.Hud_Event(sdvEvent.id);
+                hoveredModName = modName;
+                CalculateSizes();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool FallbackToLocation(GameLocation location)
+    {
+        if (ModEntry.config.Enable_HUD_Location && currentLocationModName != null)
+        {
+            ClearWeakRefs();
+            hoveredName = location.DisplayName ?? location.NameOrUniqueName;
+            hoveredModName = currentLocationModName;
+            CalculateSizes();
+            return true;
+        }
         return false;
     }
 
@@ -218,7 +266,7 @@ public sealed class Draw_CursorHUD(int screenId)
         if (
             Game1.currentLocation is GameLocation location
             && Game1.activeClickableMenu == null
-            && Game1.currentLocation.currentEvent == null
+            && location.currentEvent == null
         )
         {
             lastCheckedTile = tile;
@@ -228,12 +276,38 @@ public sealed class Draw_CursorHUD(int screenId)
                 || TryMatchObject(tile, location)
                 || TryMatchTerrainFeature(tile, location)
                 || TryMatchBuilding(tile, location)
+                || FallbackToLocation(location)
             )
             {
                 return;
             }
         }
-        ClearHovered();
+        if (eventNameTimer < 0)
+            ClearHovered();
+    }
+
+    internal void OnUpdateTicked(UpdateTickedEventArgs e)
+    {
+        if (eventNameTimer >= 0)
+        {
+            eventNameTimer -= Game1.currentGameTime.ElapsedGameTime.TotalMilliseconds;
+            if (eventNameTimer < 0)
+                ClearHovered();
+        }
+        else
+        {
+            TryMatchEvent();
+        }
+    }
+
+    internal void OnNewLocation(GameLocation location)
+    {
+        eventNameTimer = -1;
+        eventTarget.SetTarget(null);
+        if (ModEntry.modNameAPI.TryGetModName(location, out currentLocationModName))
+            FallbackToLocation(location);
+        else
+            ClearHovered();
     }
 
     internal void OnRenderedHud(RenderedHudEventArgs e)
@@ -244,26 +318,36 @@ public sealed class Draw_CursorHUD(int screenId)
                 && screenId == Context.ScreenId
                 && Game1.currentLocation != null
                 && Game1.activeClickableMenu == null
-                && Game1.currentLocation.currentEvent == null
             )
             || hoveredModName == null
             || hoveredName == null
         )
             return;
 
-        int x = 8;
-        int y = 80;
-
-        foreach (IClickableMenu clickableMenu in Game1.onScreenMenus)
+        float colorMult = 1f;
+        if (eventNameTimer >= 0 && eventNameTimer <= TIMER_FADE)
         {
-            if (clickableMenu is Toolbar toolbar)
+            double prog = eventNameTimer / TIMER_FADE;
+            colorMult = (float)(prog * prog);
+            if (colorMult <= 0)
+                return;
+        }
+
+        int x = (int)(Game1.uiViewport.Width / 2 - (hoveredSize.X / 2));
+        int y = 4;
+
+        if (Game1.IsHudDrawn)
+        {
+            foreach (IClickableMenu clickableMenu in Game1.onScreenMenus)
             {
-                x = (int)(Game1.uiViewport.Width / 2 - (hoveredSize.X / 2));
-                if (toolbar.yPositionOnScreen == Game1.uiViewport.Height)
-                    y = 4;
-                else
-                    y = (int)(Game1.viewport.Height - hoveredSize.Y - 4);
-                break;
+                if (clickableMenu is Toolbar toolbar)
+                {
+                    if (toolbar.yPositionOnScreen == Game1.uiViewport.Height)
+                        y = 4;
+                    else
+                        y = (int)(Game1.viewport.Height - hoveredSize.Y - 4);
+                    break;
+                }
             }
         }
 
@@ -275,7 +359,7 @@ public sealed class Draw_CursorHUD(int screenId)
             y,
             (int)hoveredSize.X,
             (int)hoveredSize.Y,
-            Color.White,
+            Color.White * colorMult,
             drawShadow: false
         );
         Utility.drawTextWithShadow(
@@ -283,14 +367,16 @@ public sealed class Draw_CursorHUD(int screenId)
             hoveredName,
             Game1.smallFont,
             new(x + hoveredNamePos.X, y + hoveredNamePos.Y),
-            Game1.textColor
+            Game1.textColor * colorMult,
+            shadowIntensity: colorMult
         );
         Utility.drawTextWithShadow(
             e.SpriteBatch,
             hoveredModName.ModName,
             Game1.smallFont,
             new(x + hoveredModNamePos.X, y + hoveredModNamePos.Y),
-            hoveredModName.ModNameColor
+            hoveredModName.ModNameColor * colorMult,
+            shadowIntensity: colorMult
         );
     }
 

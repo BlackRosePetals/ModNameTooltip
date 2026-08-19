@@ -88,6 +88,7 @@ public sealed class ModNameAPI : IModNameAPI
         return false;
     }
 
+    // <inheritdoc/>
     public bool TryGetModName(GameLocation? location, [NotNullWhen(true)] out IModNameInfo? modName)
     {
         modName = null;
@@ -100,6 +101,8 @@ public sealed class ModNameAPI : IModNameAPI
             locationId = "Cellar";
         if (string.IsNullOrEmpty(locationId))
             return false;
+        if (locationId == "Farm")
+            locationId = string.Concat("Farm_", Game1.GetFarmTypeKey());
         return TryGetModName_FromLocationId(locationId, out modName);
     }
 

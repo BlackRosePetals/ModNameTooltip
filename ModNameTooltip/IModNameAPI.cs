@@ -68,8 +68,8 @@ public interface IModNameAPI
 
     /// <summary>
     /// Try and get info about which mod using a real location instance.
-    /// Note that cellars and mines are normalized to the shared data
-    /// just like how GameLocation.GetData works.
+    /// Note that cellars and mines are normalized to the shared data and
+    /// Farm will use Farm_<farmtype> just like how GameLocation.GetData works.
     /// </summary>
     /// <param name="location">The location to get mod name for</param>
     /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>

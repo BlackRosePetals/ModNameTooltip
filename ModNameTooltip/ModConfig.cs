@@ -18,6 +18,8 @@ public sealed class ModConfig
     public bool Enable_HUD_Object { get; set; } = true;
     public bool Enable_HUD_TerrainFeature { get; set; } = true;
     public bool Enable_HUD_Building { get; set; } = true;
+    public bool Enable_HUD_Event { get; set; } = false;
+    public bool Enable_HUD_Location { get; set; } = false;
     public bool Display_ModId { get; set; } = false;
     public bool Display_ModSource { get; set; } = false;
     public string? Color_SDV
@@ -112,6 +114,25 @@ public sealed class ModConfig
             (value) => Enable_HUD_Building = value,
             I18n.Config_EnableHUDBuilding_Name
         );
+        gmcm.AddBoolOption(
+            mod,
+            () => Enable_HUD_Event,
+            (value) => Enable_HUD_Event = value,
+            I18n.Config_EnableHUDEvent_Name
+        );
+        gmcm.AddBoolOption(
+            mod,
+            () => Enable_HUD_Location,
+            (value) => Enable_HUD_Location = value,
+            I18n.Config_EnableHUDLocation_Name
+        );
+        gmcm.AddBoolOption(mod, () => Display_ModId, (value) => Display_ModId = value, I18n.Config_DisplayModId_Name);
+        gmcm.AddBoolOption(
+            mod,
+            () => Display_ModSource,
+            (value) => Display_ModSource = value,
+            I18n.Config_DisplayModSource_Name
+        );
         gmcm.AddTextOption(
             mod,
             () => Color_SDV ?? string.Empty,
@@ -155,6 +176,10 @@ public sealed class ModConfig
         Enable_HUD_Object = defaultConfig.Enable_HUD_Object;
         Enable_HUD_TerrainFeature = defaultConfig.Enable_HUD_TerrainFeature;
         Enable_HUD_Building = defaultConfig.Enable_HUD_Building;
+        Enable_HUD_Event = defaultConfig.Enable_HUD_Event;
+        Enable_HUD_Location = defaultConfig.Enable_HUD_Location;
+        Display_ModId = defaultConfig.Display_ModId;
+        Display_ModSource = defaultConfig.Display_ModSource;
         Color_SDV = defaultConfig.Color_SDV;
         Color_Mod = defaultConfig.Color_Mod;
     }

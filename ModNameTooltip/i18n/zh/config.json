@@ -13,6 +13,8 @@
   "config.Enable_HUD_Object.name": "- 物品",
   "config.Enable_HUD_TerrainFeature.name": "- 农作物/树/果树",
   "config.Enable_HUD_Building.name": "- 建筑",
+  "config.Enable_HUD_Event.name": "- 事件",
+  "config.Enable_HUD_Location.name": "- 地点",
   "config.Display_ModId.name": "显示模组ID",
   "config.Display_ModId.desc": "显示模组ID而非模组名",
   "config.Display_ModSource.name": "显示模组来源",
