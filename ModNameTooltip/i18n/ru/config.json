@@ -1,0 +1,33 @@
+{
+  "hud.farm-animal": "{{name}} ({{kind}})",
+  "hud.event": "Событие: {{eventId}}",
+
+  "config.Enable_Tooltip.name": "Включить: подсказка",
+  "config.Enable_Tooltip.desc": "Показывать название мода во всплывающих подсказках предметов.",
+  "config.Toggle_Tooltip.name": "Клавиша переключения подсказок",
+  "config.Toggle_Tooltip.desc": "Клавиша для включения/отключения отображения названий модов в подсказках предметов.",
+
+  "config.Enable_HUD.name": "Включить: HUD",
+  "config.Enable_HUD.desc": "Включить HUD, отображающий имя субъекта и название его мода для объектов под курсором (NPC, животные, растения, предметы и т.д.).",
+  "config.Toggle_HUD.name": "Клавиша переключения HUD",
+  "config.Toggle_HUD.desc": "Клавиша для включения/отключения HUD с названиями модов.",
+
+  "config.Enable_HUD_NPC.name": "- NPC / Питомцы",
+  "config.Enable_HUD_FarmAnimal.name": "- Домашние животные",
+  "config.Enable_HUD_Object.name": "- Объекты",
+  "config.Enable_HUD_TerrainFeature.name": "- Посевы / Деревья / Плодовые деревья",
+  "config.Enable_HUD_Building.name": "- Здания",
+  "config.Enable_HUD_Event.name": "- Событие",
+  "config.Enable_HUD_Location.name": "- Локация",
+
+  "config.Display_ModId.name": "Отображать ID мода",
+  "config.Display_ModId.desc": "Вместо названия мода показывать его уникальный ID.",
+
+  "config.Display_ModSource.name": "Отображать источник мода",
+  "config.Display_ModSource.desc": "Дополнительно показывать источник мода (например, ключ обновления), если он доступен.",
+
+  "config.Color_SDV.name": "Цвет: Stardew Valley",
+  "config.Color_SDV.desc": "Шестнадцатеричный код цвета для текста «Stardew Valley» в подсказках и HUD.",
+  "config.Color_Mod.name": "Цвет: Мод",
+  "config.Color_Mod.desc": "Шестнадцатеричный код цвета для названий модов в подсказках и HUD."
+}
