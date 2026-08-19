@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using AssetPipelineTrace;
 using Sickhead.Engine.Util;
 using StardewModdingAPI;
 using StardewModdingAPI.Framework;
@@ -8,6 +7,11 @@ using StardewModdingAPI.Framework.Content;
 using StardewValley;
 
 namespace ModNameTooltip;
+
+public sealed record DataTraceFrame(string? EditedBy, string? OnBehalfOf, IReadOnlySet<string> AddedKeys)
+{
+    public string ModId => OnBehalfOf ?? EditedBy ?? "UNKNOWN";
+}
 
 public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, string, ModNameInfo?>? specialLookup = null)
 {

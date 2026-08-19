@@ -1,8 +1,10 @@
 using System.Diagnostics.CodeAnalysis;
+using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Characters;
 using StardewValley.ItemTypeDefinitions;
+using StardewValley.Locations;
 using StardewValley.TerrainFeatures;
 
 namespace ModNameTooltip;
@@ -86,6 +88,29 @@ public sealed class ModNameAPI : IModNameAPI
         return false;
     }
 
+    public bool TryGetModName(GameLocation? location, [NotNullWhen(true)] out IModNameInfo? modName)
+    {
+        modName = null;
+        if (location == null)
+            return false;
+        string locationId = location.Name;
+        if (location is MineShaft)
+            locationId = "UndergroundMine";
+        else if (location is Cellar && locationId.StartsWith("Cellar"))
+            locationId = "Cellar";
+        if (string.IsNullOrEmpty(locationId))
+            return false;
+        return TryGetModName_FromLocationId(locationId, out modName);
+    }
+
+    public bool TryGetModName(Event? sdvEvent, [NotNullWhen(true)] out IModNameInfo? modName)
+    {
+        modName = null;
+        if (sdvEvent?.fromAssetName == null)
+            return false;
+        return TryGetModName_FromEventId(sdvEvent.fromAssetName, sdvEvent.id, out modName);
+    }
+
     // <inheritdoc/>
     public bool TryGetModName_FromNpcName(string npcName, [NotNullWhen(true)] out IModNameInfo? modName)
     {
@@ -126,6 +151,26 @@ public sealed class ModNameAPI : IModNameAPI
     public bool TryGetModName_FromBuildingId(string buildingId, [NotNullWhen(true)] out IModNameInfo? modName)
     {
         return TryGetModNameFromCtx(ModEntry.buildingsTraceCtx, buildingId, out modName);
+    }
+
+    // <inheritdoc/>
+    public bool TryGetModName_FromLocationId(string locationId, [NotNullWhen(true)] out IModNameInfo? modName)
+    {
+        return TryGetModNameFromCtx(ModEntry.locationsTraceCtx, locationId, out modName);
+    }
+
+    // <inheritdoc/>
+    public bool TryGetModName_FromEventId(
+        string eventAsset,
+        string eventId,
+        [NotNullWhen(true)] out IModNameInfo? modName
+    )
+    {
+        modName = null;
+        IAssetName eventAssetParsed = ModEntry.help.GameContent.ParseAssetName(eventAsset);
+        if (!ModEntry.eventAssetToTraceCtx.TryGetValue(eventAssetParsed, out TraceContext? ctx))
+            return false;
+        return TryGetModNameFromCtx(ctx, eventId, out modName);
     }
 
     private static bool TryGetModNameFromCtx(TraceContext ctx, string id, [NotNullWhen(true)] out IModNameInfo? modName)

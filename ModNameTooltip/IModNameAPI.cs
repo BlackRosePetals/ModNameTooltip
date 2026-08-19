@@ -60,12 +60,29 @@ public interface IModNameAPI
 
     /// <summary>
     /// Try and get info about which mod using a real building instance.
-    /// </list>
     /// </summary>
-    /// <param name="building">The building mod name for</param>
+    /// <param name="building">The building to get mod name for</param>
     /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
     /// <returns>True if the mod is found</returns>
     bool TryGetModName(Building? building, [NotNullWhen(true)] out IModNameInfo? modName);
+
+    /// <summary>
+    /// Try and get info about which mod using a real location instance.
+    /// Note that cellars and mines are normalized to the shared data
+    /// just like how GameLocation.GetData works.
+    /// </summary>
+    /// <param name="location">The location to get mod name for</param>
+    /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
+    /// <returns>True if the mod is found</returns>
+    bool TryGetModName(GameLocation? location, [NotNullWhen(true)] out IModNameInfo? modName);
+
+    /// <summary>
+    /// Try and get info about which mod using a real event instance.
+    /// </summary>
+    /// <param name="sdvEvent">The event to get mod name for</param>
+    /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
+    /// <returns>True if the mod is found</returns>
+    bool TryGetModName(Event? sdvEvent, [NotNullWhen(true)] out IModNameInfo? modName);
 
     /// <summary>
     /// Try and get info about which mod added an item using the item id
@@ -130,4 +147,25 @@ public interface IModNameAPI
     /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
     /// <returns>True if the mod is found</returns>
     bool TryGetModName_FromBuildingId(string buildingId, [NotNullWhen(true)] out IModNameInfo? modName);
+
+    /// <summary>
+    /// Try and get info about which mod added a location using the location internal name
+    /// </summary>
+    /// <param name="locationId">The location internal name</param>
+    /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
+    /// <returns>True if the mod is found</returns>
+    bool TryGetModName_FromLocationId(string locationId, [NotNullWhen(true)] out IModNameInfo? modName);
+
+    /// <summary>
+    /// Try and get info about which mod added an event using the event asset and id.
+    /// You can obtain the event asset name from location id by:
+    /// <code>
+    /// string eventAsset = $"Data/Events/{locationId}"
+    /// </code>
+    /// </summary>
+    /// <param name="eventAsset">The event asset</param>
+    /// <param name="eventId">The event id</param>
+    /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
+    /// <returns>True if the mod is found</returns>
+    bool TryGetModName_FromEventId(string eventAsset, string eventId, [NotNullWhen(true)] out IModNameInfo? modName);
 }

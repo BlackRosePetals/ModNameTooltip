@@ -18,6 +18,8 @@ public sealed class ModConfig
     public bool Enable_HUD_Object { get; set; } = true;
     public bool Enable_HUD_TerrainFeature { get; set; } = true;
     public bool Enable_HUD_Building { get; set; } = true;
+    public bool Display_ModId { get; set; } = false;
+    public bool Display_ModSource { get; set; } = false;
     public string? Color_SDV
     {
         get;

@@ -1,7 +1,6 @@
 global using SObject = StardewValley.Object;
 using System.Diagnostics;
 using HarmonyLib;
-using Microsoft.Xna.Framework;
 using ModNameTooltip.Features;
 using ModNameTooltip.Integration;
 using StardewModdingAPI;
@@ -30,6 +29,7 @@ public sealed class ModEntry : Mod
 
     internal static readonly List<TraceContext> traceCtx = [];
     internal static readonly Dictionary<string, TraceContext> itemTypeToTraceCtx = [];
+    internal static readonly Dictionary<IAssetName, TraceContext> eventAssetToTraceCtx = [];
     internal static TraceContext npcTraceCtx = null!;
     internal static TraceContext farmAnimalTraceCtx = null!;
     internal static TraceContext petTraceCtx = null!;
@@ -37,10 +37,11 @@ public sealed class ModEntry : Mod
     internal static TraceContext wildTreeTraceCtx = null!;
     internal static TraceContext fruitTreeTraceCtx = null!;
     internal static TraceContext buildingsTraceCtx = null!;
+    internal static TraceContext locationsTraceCtx = null!;
 
     internal static readonly ModNameAPI modNameAPI = new();
     internal static readonly PerScreen<Draw_CursorHUD> drawCursorHUD = new(() => new(Context.ScreenId));
-    internal static Color? menuColor = null;
+    internal static int dataLocationReadyTick = -1;
 
     public override void Entry(IModHelper helper)
     {
@@ -98,6 +99,7 @@ public sealed class ModEntry : Mod
         wildTreeTraceCtx = AddTraceCtx("Data/WildTrees");
         fruitTreeTraceCtx = AddTraceCtx("Data/FruitTrees");
         buildingsTraceCtx = AddTraceCtx("Data/Buildings");
+        locationsTraceCtx = AddTraceCtx("Data/Locations");
 
         help.ConsoleCommands.Add("mnt-print", "Print currently found keys", ConsoleDebugPrint);
 
@@ -129,6 +131,13 @@ public sealed class ModEntry : Mod
     private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)
     {
         ModNameInfo.MaybeUpdateMenuColor();
+        if (Game1.ticks == dataLocationReadyTick + 1)
+        {
+            foreach (string locationId in Game1.locationData.Keys)
+            {
+                AddLocationEventTraceCtx(locationId);
+            }
+        }
     }
 
     private void OnRenderHud(object? sender, RenderedHudEventArgs e)
@@ -179,15 +188,22 @@ public sealed class ModEntry : Mod
         {
             // do a bogus edit so that our prefix always happens bolb
             if (ctx.TracedAsset.IsEquivalentTo(e.NameWithoutLocale))
-                e.Edit(asset => { }, AssetEditPriority.Early);
+                e.Edit(BogusEdit, AssetEditPriority.Early);
         }
     }
 
+    private void BogusEdit(IAssetData data) { }
+
     private void OnAssetReady(object? sender, AssetReadyEventArgs e)
     {
-        if (e.NameWithoutLocale.IsEquivalentTo("LooseSprites\\Cursors"))
+        if (e.NameWithoutLocale.IsEquivalentTo("LooseSprites/Cursors"))
         {
             ModNameInfo.ResetMenuColor();
+            return;
+        }
+        if (e.NameWithoutLocale.IsEquivalentTo("Data/Locations"))
+        {
+            dataLocationReadyTick = Game1.ticks;
             return;
         }
         foreach (TraceContext ctx in traceCtx)
@@ -237,6 +253,17 @@ public sealed class ModEntry : Mod
         TraceContext ctx = new(help.GameContent.ParseAssetName(assetName));
         traceCtx.Add(ctx);
         return ctx;
+    }
+
+    private static void AddLocationEventTraceCtx(string locationId)
+    {
+        IAssetName assetName = help.GameContent.ParseAssetName($"Data/Events/{locationId}");
+        if (eventAssetToTraceCtx.ContainsKey(assetName))
+            return;
+        TraceContext ctx = new(assetName);
+        eventAssetToTraceCtx[assetName] = ctx;
+        traceCtx.Add(ctx);
+        help.GameContent.InvalidateCache(assetName);
     }
 
     private static void AssetRequestedEventArgs_Edit_Prefix(

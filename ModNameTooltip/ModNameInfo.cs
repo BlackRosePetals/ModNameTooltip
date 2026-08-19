@@ -18,11 +18,23 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo) : IModNameInfo
     private static Color? colorTriadic2 = null;
 
     private readonly bool isStardew = ModId == STARDEW_VALLEY;
-
-    public string ModName =>
-        Game1.content.LoadStringReturnNullIfNotFound($"{ModEntry.Asset_ModNames}:{ModId}")
-        ?? ModInfo?.Manifest.Name
-        ?? ModId;
+    private readonly string? firstUpdateKey = ModInfo?.Manifest.UpdateKeys.FirstOrDefault();
+    public string ModName
+    {
+        get
+        {
+            if (isStardew)
+                return Game1.content.LoadStringReturnNullIfNotFound($"{ModEntry.Asset_ModNames}:{ModId}");
+            string modDisplayName = ModEntry.config.Display_ModId
+                ? ModId
+                : Game1.content.LoadStringReturnNullIfNotFound($"{ModEntry.Asset_ModNames}:{ModId}")
+                    ?? ModInfo?.Manifest.Name
+                    ?? ModId;
+            if (ModEntry.config.Display_ModSource && firstUpdateKey != null)
+                return string.Concat(modDisplayName, Environment.NewLine, "[", firstUpdateKey, "]");
+            return modDisplayName;
+        }
+    }
 
     public Color ModNameColor =>
         (
