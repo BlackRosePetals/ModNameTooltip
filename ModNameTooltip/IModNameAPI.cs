@@ -157,15 +157,20 @@ public interface IModNameAPI
     bool TryGetModName_FromLocationId(string locationId, [NotNullWhen(true)] out IModNameInfo? modName);
 
     /// <summary>
-    /// Try and get info about which mod added an event using the event asset and id.
+    /// Try and get info about which mod added any particular key using the asset name and asset id.
+    /// This is primarily used for events, but does work for other traced assets.
     /// You can obtain the event asset name from location id by:
     /// <code>
     /// string eventAsset = $"Data/Events/{locationId}"
     /// </code>
     /// </summary>
-    /// <param name="eventAsset">The event asset</param>
-    /// <param name="eventId">The event id</param>
+    /// <param name="assetName">The traced asset</param>
+    /// <param name="assetId">The id to check within the asset</param>
     /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
     /// <returns>True if the mod is found</returns>
-    bool TryGetModName_FromEventId(string eventAsset, string eventId, [NotNullWhen(true)] out IModNameInfo? modName);
+    bool TryGetModName_FromAssetAndId(
+        IAssetName assetName,
+        string assetId,
+        [NotNullWhen(true)] out IModNameInfo? modName
+    );
 }

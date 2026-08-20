@@ -29,7 +29,6 @@ public sealed class ModEntry : Mod
 
     internal static readonly Dictionary<IAssetName, TraceContext> traceCtx = [];
     internal static readonly Dictionary<string, TraceContext> itemTypeToTraceCtx = [];
-    internal static readonly Dictionary<IAssetName, TraceContext> eventAssetToTraceCtx = [];
     internal static TraceContext npcTraceCtx = null!;
     internal static TraceContext farmAnimalTraceCtx = null!;
     internal static TraceContext petTraceCtx = null!;
@@ -102,6 +101,8 @@ public sealed class ModEntry : Mod
         buildingsTraceCtx = AddTraceCtx("Data/Buildings");
         locationsTraceCtx = AddTraceCtx("Data/Locations");
 
+        AddLocationEventTraceCtx("Farm");
+
         help.ConsoleCommands.Add("mnt-print", "Print currently found keys", ConsoleDebugPrint);
 
         Patch_HoverText.Toggle();
@@ -141,7 +142,8 @@ public sealed class ModEntry : Mod
         {
             foreach (string locationId in Game1.locationData.Keys)
             {
-                AddLocationEventTraceCtx(locationId);
+                if (!locationId.StartsWith("Farm_"))
+                    AddLocationEventTraceCtx(locationId);
             }
         }
         drawCursorHUD.Value.OnUpdateTicked(e);
@@ -264,7 +266,7 @@ public sealed class ModEntry : Mod
     private static void AddLocationEventTraceCtx(string locationId)
     {
         IAssetName assetName = help.GameContent.ParseAssetName($"Data/Events/{locationId}");
-        if (eventAssetToTraceCtx.ContainsKey(assetName))
+        if (traceCtx.ContainsKey(assetName))
             return;
         TraceContext ctx = new(
             assetName,
@@ -278,7 +280,6 @@ public sealed class ModEntry : Mod
                 return ModNameInfo.STARDEW;
             }
         );
-        eventAssetToTraceCtx[assetName] = ctx;
         traceCtx[assetName] = ctx;
         help.GameContent.InvalidateCache(assetName);
     }

@@ -1,5 +1,6 @@
 {
   "hud.farm-animal": "{{name}} ({{kind}})",
+  "hud.event": "事件：{{eventId}}",
   "config.Enable_Tooltip.name": "启用：物品提示",
   "config.Enable_Tooltip.desc": "启用物品提示上的模组名",
   "config.Toggle_Tooltip.name": "物品提示切换键",

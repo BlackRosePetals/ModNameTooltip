@@ -111,7 +111,8 @@ public sealed class ModNameAPI : IModNameAPI
         modName = null;
         if (sdvEvent?.fromAssetName == null)
             return false;
-        return TryGetModName_FromEventId(sdvEvent.fromAssetName, sdvEvent.id, out modName);
+        IAssetName fromAsset = ModEntry.help.GameContent.ParseAssetName(sdvEvent.fromAssetName);
+        return TryGetModName_FromAssetAndId(fromAsset, sdvEvent.id, out modName);
     }
 
     // <inheritdoc/>
@@ -163,17 +164,16 @@ public sealed class ModNameAPI : IModNameAPI
     }
 
     // <inheritdoc/>
-    public bool TryGetModName_FromEventId(
-        string eventAsset,
-        string eventId,
+    public bool TryGetModName_FromAssetAndId(
+        IAssetName assetName,
+        string assetId,
         [NotNullWhen(true)] out IModNameInfo? modName
     )
     {
         modName = null;
-        IAssetName eventAssetParsed = ModEntry.help.GameContent.ParseAssetName(eventAsset);
-        if (!ModEntry.eventAssetToTraceCtx.TryGetValue(eventAssetParsed, out TraceContext? ctx))
+        if (!ModEntry.traceCtx.TryGetValue(assetName, out TraceContext? ctx))
             return false;
-        return TryGetModNameFromCtx(ctx, eventId, out modName);
+        return TryGetModNameFromCtx(ctx, assetId, out modName);
     }
 
     private static bool TryGetModNameFromCtx(TraceContext ctx, string id, [NotNullWhen(true)] out IModNameInfo? modName)

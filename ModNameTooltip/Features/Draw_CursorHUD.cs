@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using HarmonyLib;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
@@ -206,25 +207,33 @@ public sealed class Draw_CursorHUD(int screenId)
         return false;
     }
 
-    private bool TryMatchEvent()
+    private bool TryMatchEvent([CallerMemberName] string? caller = null)
     {
         if (
-            eventNameTimer == -1
+            ModEntry.config.Enable_HUD_Event
+            && eventNameTimer == -1
             && !Game1.globalFade
             && Game1.currentLocation is GameLocation location
             && location.currentEvent is Event sdvEvent
         )
         {
-            if (eventTarget.TryGetTarget(out Event? target) && target == sdvEvent)
+            if (eventTarget.TryGetTarget(out Event? target) && target.id == sdvEvent.id)
                 return true;
-            if (
-                ModEntry.config.Enable_HUD_Event
-                && ModEntry.modNameAPI.TryGetModName(sdvEvent, out IModNameInfo? modName)
-            )
+            ModEntry.Log($"'{sdvEvent.fromAssetName}':'{sdvEvent.id}' @ '{location.NameOrUniqueName}'");
+            ClearWeakRefs();
+            eventTarget.SetTarget(sdvEvent);
+            sdvEvent.onEventFinished = (Action)
+                Delegate.Combine(
+                    sdvEvent.onEventFinished,
+                    () =>
+                    {
+                        ClearHovered();
+                        eventTarget.SetTarget(null);
+                        eventNameTimer = -1;
+                    }
+                );
+            if (ModEntry.modNameAPI.TryGetModName(sdvEvent, out IModNameInfo? modName))
             {
-                ModEntry.Log($"Event: '{sdvEvent.id}' @ '{location.NameOrUniqueName}'");
-                ClearWeakRefs();
-                eventTarget.SetTarget(sdvEvent);
                 eventNameTimer = EVENT_TIMER_LEN;
                 hoveredName = I18n.Hud_Event(sdvEvent.id);
                 hoveredModName = modName;
@@ -267,6 +276,7 @@ public sealed class Draw_CursorHUD(int screenId)
             Game1.currentLocation is GameLocation location
             && Game1.activeClickableMenu == null
             && location.currentEvent == null
+            && eventNameTimer <= 0
         )
         {
             lastCheckedTile = tile;
@@ -282,19 +292,19 @@ public sealed class Draw_CursorHUD(int screenId)
                 return;
             }
         }
-        if (eventNameTimer < 0)
+        if (eventNameTimer <= 0)
             ClearHovered();
     }
 
     internal void OnUpdateTicked(UpdateTickedEventArgs e)
     {
-        if (eventNameTimer >= 0)
+        if (eventNameTimer >= 0 && !Game1.globalFade)
         {
             eventNameTimer -= Game1.currentGameTime.ElapsedGameTime.TotalMilliseconds;
             if (eventNameTimer < 0)
                 ClearHovered();
         }
-        else
+        else if (Context.IsWorldReady)
         {
             TryMatchEvent();
         }
@@ -302,23 +312,25 @@ public sealed class Draw_CursorHUD(int screenId)
 
     internal void OnNewLocation(GameLocation location)
     {
-        eventNameTimer = -1;
-        eventTarget.SetTarget(null);
-        if (ModEntry.modNameAPI.TryGetModName(location, out currentLocationModName))
+        if (location.currentEvent != null)
+        {
+            TryMatchEvent();
+        }
+        else if (ModEntry.modNameAPI.TryGetModName(location, out currentLocationModName))
+        {
+            eventNameTimer = -1;
             FallbackToLocation(location);
+        }
         else
+        {
             ClearHovered();
+        }
     }
 
     internal void OnRenderedHud(RenderedHudEventArgs e)
     {
         if (
-            !(
-                ModEntry.config.Enable_HUD
-                && screenId == Context.ScreenId
-                && Game1.currentLocation != null
-                && Game1.activeClickableMenu == null
-            )
+            !(ModEntry.config.Enable_HUD && screenId == Context.ScreenId && Game1.currentLocation != null)
             || hoveredModName == null
             || hoveredName == null
         )
@@ -336,7 +348,7 @@ public sealed class Draw_CursorHUD(int screenId)
         int x = (int)(Game1.uiViewport.Width / 2 - (hoveredSize.X / 2));
         int y = 4;
 
-        if (Game1.IsHudDrawn)
+        if (Game1.IsHudDrawn && Game1.activeClickableMenu == null && Game1.currentLocation.currentEvent == null)
         {
             foreach (IClickableMenu clickableMenu in Game1.onScreenMenus)
             {
