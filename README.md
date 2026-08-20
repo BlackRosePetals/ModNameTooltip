@@ -42,6 +42,7 @@ This supports:
 
 - English
 - 简体中文
+- Русский (by [ellatuk](https://github.com/ellatuk))
 
 Translations are welcome, feel free to post separately.
 
