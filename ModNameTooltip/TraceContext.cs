@@ -22,7 +22,7 @@ public sealed class TraceContext(
     private readonly Func<TraceContext, string, ModNameInfo?>? specialLookup = specialLookup;
     internal readonly bool isEvent = isEvent;
 
-    private bool active = true;
+    internal bool active = true;
     private HashSet<string>? tracedKeys = null;
     private readonly List<DataTraceFrame> tracedFrames = [];
 

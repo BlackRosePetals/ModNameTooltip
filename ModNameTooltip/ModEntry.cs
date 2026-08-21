@@ -7,6 +7,7 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
+using StardewValley.GameData.Objects;
 
 namespace ModNameTooltip;
 
@@ -49,22 +50,8 @@ public sealed class ModEntry : Mod
         help = helper;
         config = helper.ReadConfig<ModConfig>();
 
-        try
+        if (!TryPatchEdit())
         {
-            harmony.Patch(
-                original: AccessTools.DeclaredMethod(
-                    typeof(AssetRequestedEventArgs),
-                    nameof(AssetRequestedEventArgs.Edit)
-                ),
-                prefix: new HarmonyMethod(typeof(ModEntry), nameof(AssetRequestedEventArgs_Edit_Prefix))
-                {
-                    priority = Priority.First,
-                }
-            );
-        }
-        catch (Exception ex)
-        {
-            Log($"Failed to patch AssetRequestedEventArgs.Edit\n{ex}", LogLevel.Error);
             return;
         }
 
@@ -103,9 +90,91 @@ public sealed class ModEntry : Mod
 
         AddLocationEventTraceCtx("Farm");
 
-        help.ConsoleCommands.Add("mnt-print", "Print currently found keys", ConsoleDebugPrint);
+        help.ConsoleCommands.Add("mnt-print", "Print currently traced mod names", ConsoleDebugPrint);
+        help.ConsoleCommands.Add("mnt-perf", "Test performance on tracing of events", ConsoleTestPerf);
 
         Patch_HoverText.Toggle();
+    }
+
+    private static bool TryPatchEdit()
+    {
+        try
+        {
+            harmony.Patch(
+                original: AccessTools.DeclaredMethod(
+                    typeof(AssetRequestedEventArgs),
+                    nameof(AssetRequestedEventArgs.Edit)
+                ),
+                prefix: new HarmonyMethod(typeof(ModEntry), nameof(AssetRequestedEventArgs_Edit_Prefix))
+                {
+                    priority = Priority.First,
+                }
+            );
+        }
+        catch (Exception ex)
+        {
+            Log($"Failed to patch AssetRequestedEventArgs.Edit\n{ex}", LogLevel.Error);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void ConsoleDebugPrint(string arg1, string[] arg2)
+    {
+        foreach (TraceContext ctx in traceCtx.Values)
+        {
+            Log(ctx.TracedAsset.Name, LogLevel.Info);
+            foreach ((string key, ModNameInfo modNameText) in ctx.KeyToMod)
+            {
+                Log($"- {key} : {modNameText.ModName} ({modNameText.ModId})", LogLevel.Info);
+            }
+        }
+    }
+
+    private void ConsoleTestPerf(string arg1, string[] arg2)
+    {
+        const int trials = 10;
+        int count = 0;
+        double compares = 0;
+        foreach ((IAssetName assetName, TraceContext ctx) in traceCtx)
+        {
+            if (!ctx.isEvent)
+                continue;
+            if (!help.GameContent.DoesAssetExist<Dictionary<string, string>>(assetName))
+                continue;
+            // warmup
+            for (int i = 0; i < trials; i++)
+            {
+                help.GameContent.InvalidateCache(assetName);
+                var _ = help.GameContent.Load<Dictionary<string, string>>(assetName);
+            }
+            // baseline
+            ctx.active = false;
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            for (int i = 0; i < trials; i++)
+            {
+                help.GameContent.InvalidateCache(assetName);
+                var _ = help.GameContent.Load<Dictionary<string, string>>(assetName);
+            }
+            stopwatch.Stop();
+            Log($"{assetName} A: {stopwatch.Elapsed.TotalMilliseconds}", LogLevel.Debug);
+            double baselineValue = stopwatch.Elapsed.TotalMilliseconds;
+
+            ctx.active = true;
+            stopwatch.Restart();
+            for (int i = 0; i < trials; i++)
+            {
+                help.GameContent.InvalidateCache(assetName);
+                var _ = help.GameContent.Load<Dictionary<string, string>>(assetName);
+            }
+            stopwatch.Stop();
+            Log($"{assetName} B: {stopwatch.Elapsed.TotalMilliseconds}", LogLevel.Debug);
+            Log($"{assetName} Compare {stopwatch.Elapsed.TotalMilliseconds / baselineValue:P2}", LogLevel.Info);
+            compares += stopwatch.Elapsed.TotalMilliseconds / baselineValue;
+            count++;
+        }
+        Log($"Aggregate {compares / count:P2}", LogLevel.Info);
     }
 
     private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
@@ -167,18 +236,6 @@ public sealed class ModEntry : Mod
         return modNameAPI;
     }
 
-    private void ConsoleDebugPrint(string arg1, string[] arg2)
-    {
-        foreach (TraceContext ctx in traceCtx.Values)
-        {
-            Log(ctx.TracedAsset.Name, LogLevel.Info);
-            foreach ((string key, ModNameInfo modNameText) in ctx.KeyToMod)
-            {
-                Log($"- {key} : {modNameText}", LogLevel.Info);
-            }
-        }
-    }
-
     private void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
     {
         if (e.NameWithoutLocale.IsEquivalentTo(Asset_ModNames))
@@ -196,7 +253,7 @@ public sealed class ModEntry : Mod
         foreach (TraceContext ctx in traceCtx.Values)
         {
             // do a bogus edit so that our prefix always happens bolb
-            if (ctx.TracedAsset.IsEquivalentTo(e.NameWithoutLocale))
+            if (ctx.active && ctx.TracedAsset.IsEquivalentTo(e.NameWithoutLocale))
                 e.Edit(BogusEdit, AssetEditPriority.Early);
         }
     }
