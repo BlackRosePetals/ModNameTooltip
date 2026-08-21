@@ -298,11 +298,49 @@ public static class Patch_HoverText
                 .ThrowIfNotMatch("Failed to match 'num6 += ((boldTitleText != null) ? 16 : 0)");
             CodeInstruction ldlocY = matcher.InstructionAt(-8);
             CodeInstruction stlocY = matcher.InstructionAt(-1);
-            matcher.Opcode = OpCodes.Ldloc;
-            matcher.Operand = modNameLoc.LocalIndex;
+            matcher.InsertAndAdvance([
+                new(OpCodes.Ldloc, modNameLoc.LocalIndex),
+                new(OpCodes.Ldarg_0),
+                new(OpCodes.Ldarg_2),
+                ldlocX.Clone(),
+                ldlocY.Clone(),
+                new(OpCodes.Call, AccessTools.DeclaredMethod(typeof(ModNameInfo), nameof(ModNameInfo.Draw))),
+                ldlocY.Clone(),
+                new(OpCodes.Ldloc, modNameSize.LocalIndex),
+                new(OpCodes.Ldfld, vector2Y),
+                new(OpCodes.Conv_I4),
+                new(OpCodes.Add),
+                stlocY.Clone(),
+            ]);
+
+            // if (hoveredItem is Tool tool && tool.GetTotalForgeLevels() > 0)
+            // IL_09fb: ldarg.s hoveredItem
+            // IL_09fd: isinst StardewValley.Tool
+            // IL_0a02: stloc.s 27
+            // IL_0a04: ldloc.s 27
+            // IL_0a06: brfalse IL_0b13
+
+            // IL_0a0b: ldloc.s 27
+            // IL_0a0d: ldc.i4.0
+            // IL_0a0e: callvirt instance int32 StardewValley.Tool::GetTotalForgeLevels(bool)
+            // IL_0a13: ldc.i4.0
+            // IL_0a14: ble IL_0b13
             matcher
-                .Advance(1)
+                .MatchStartBackwards([
+                    new(OpCodes.Ldarg_S, (byte)9),
+                    new(OpCodes.Isinst, typeof(Tool)),
+                    new(inst => inst.IsStloc()),
+                    new(inst => inst.IsLdloc()),
+                    new(OpCodes.Brfalse),
+                    new(inst => inst.IsLdloc()),
+                    new(OpCodes.Ldc_I4_0),
+                    new(OpCodes.Callvirt),
+                    new(OpCodes.Ldc_I4_0),
+                    new(OpCodes.Ble),
+                ])
+                .ThrowIfNotMatch("Failed to match 'if (hoveredItem is Tool tool && tool.GetTotalForgeLevels() > 0)")
                 .InsertAndAdvance([
+                    new(OpCodes.Ldloc, modNameLoc.LocalIndex),
                     new(OpCodes.Ldarg_0),
                     new(OpCodes.Ldarg_2),
                     ldlocX.Clone(),
@@ -314,7 +352,6 @@ public static class Patch_HoverText
                     new(OpCodes.Conv_I4),
                     new(OpCodes.Add),
                     stlocY.Clone(),
-                    new(OpCodes.Ldarg_S, (byte)9),
                 ]);
 
             return matcher.Instructions();
