@@ -220,12 +220,9 @@ public sealed class ModEntry : Mod
         }
     }
 
-    private static void AddItemTraceCtx(string itemTypeId, string assetNameStr)
+    internal static void AddItemTraceCtx(string itemTypeId, string assetNameStr)
     {
-        IAssetName assetName = help.GameContent.ParseAssetName(assetNameStr);
-        TraceContext ctx = new(assetName);
-        itemTypeToTraceCtx[itemTypeId] = ctx;
-        traceCtx[assetName] = ctx;
+        itemTypeToTraceCtx[itemTypeId] = AddTraceCtx(help.GameContent.ParseAssetName(assetNameStr));
     }
 
     private static void AddTraceCtxForWallsAndFloors()
@@ -258,7 +255,12 @@ public sealed class ModEntry : Mod
 
     private static TraceContext AddTraceCtx(string assetName)
     {
-        TraceContext ctx = new(help.GameContent.ParseAssetName(assetName));
+        return AddTraceCtx(help.GameContent.ParseAssetName(assetName));
+    }
+
+    internal static TraceContext AddTraceCtx(IAssetName assetName)
+    {
+        TraceContext ctx = new(assetName);
         traceCtx[ctx.TracedAsset] = ctx;
         return ctx;
     }
@@ -278,7 +280,8 @@ public sealed class ModEntry : Mod
                         return modName;
                 }
                 return ModNameInfo.STARDEW;
-            }
+            },
+            isEvent: true
         );
         traceCtx[assetName] = ctx;
         help.GameContent.InvalidateCache(assetName);

@@ -24,6 +24,7 @@ public interface IModNameInfo
 
 public interface IModNameAPI
 {
+    #region fetch
     /// <summary>
     /// Try and get info about which mod added an item using a real item instance.
     /// Supports all vanilla item types, but not mod added item definitions.
@@ -161,7 +162,7 @@ public interface IModNameAPI
     /// This is primarily used for events, but does work for other traced assets.
     /// You can obtain the event asset name from location id by:
     /// <code>
-    /// string eventAsset = $"Data/Events/{locationId}"
+    /// IAssetName eventAsset = Helper.GameContent.ParseAssetName($"Data/Events/{locationId}");
     /// </code>
     /// </summary>
     /// <param name="assetName">The traced asset</param>
@@ -173,4 +174,21 @@ public interface IModNameAPI
         string assetId,
         [NotNullWhen(true)] out IModNameInfo? modName
     );
+    #endregion
+
+    #region register
+    /// <summary>
+    /// Try and register an asset associated with an item type identifer such as '(TR)'.
+    /// This allows mod name tooltips to support your custom item type.
+    /// Once the asset has been loaded you can fetch what mod added a particular entry with <see cref="TryGetModName(Item? item, out IModNameInfo? modName)"/>.
+    /// </summary>
+    /// <remarks>
+    /// If the asset has already been loaded prior to the trace registration, you'll have to invalidate
+    /// then load the asset before their mod name info will be populated.
+    /// </remarks>
+    /// <param name="itemTypeId">The item type identifier</param>
+    /// <param name="assetName">The asset name to trace</param>
+    /// <returns></returns>
+    void RegisterItemDefinitionTrace(string itemTypeId, IAssetName assetName);
+    #endregion
 }

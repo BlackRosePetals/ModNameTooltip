@@ -11,6 +11,7 @@ namespace ModNameTooltip;
 
 public sealed class ModNameAPI : IModNameAPI
 {
+    #region fetch
     // <inheritdoc/>
     public bool TryGetModName(Item? item, [NotNullWhen(true)] out IModNameInfo? modName)
     {
@@ -175,6 +176,20 @@ public sealed class ModNameAPI : IModNameAPI
             return false;
         return TryGetModNameFromCtx(ctx, assetId, out modName);
     }
+    #endregion
+
+    #region register
+    public void RegisterItemDefinitionTrace(string itemTypeId, IAssetName assetName)
+    {
+        if (Game1.ticks > 0)
+            throw new InvalidOperationException("RegisterItemDefinitionTrace can only be called before GameLaunched");
+        if (ModEntry.itemTypeToTraceCtx.ContainsKey(itemTypeId))
+            return;
+        if (!ModEntry.traceCtx.TryGetValue(assetName, out TraceContext? ctx))
+            ctx = ModEntry.AddTraceCtx(assetName);
+        ModEntry.itemTypeToTraceCtx[itemTypeId] = ctx;
+    }
+    #endregion
 
     private static bool TryGetModNameFromCtx(TraceContext ctx, string id, [NotNullWhen(true)] out IModNameInfo? modName)
     {

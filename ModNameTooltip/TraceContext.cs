@@ -4,7 +4,6 @@ using Sickhead.Engine.Util;
 using StardewModdingAPI;
 using StardewModdingAPI.Framework;
 using StardewModdingAPI.Framework.Content;
-using StardewValley;
 
 namespace ModNameTooltip;
 
@@ -13,14 +12,20 @@ public sealed record DataTraceFrame(string? EditedBy, string? OnBehalfOf, IReadO
     public string ModId => OnBehalfOf ?? EditedBy ?? "UNKNOWN";
 }
 
-public sealed class TraceContext(IAssetName tracedAsset, Func<TraceContext, string, ModNameInfo?>? specialLookup = null)
+public sealed class TraceContext(
+    IAssetName tracedAsset,
+    Func<TraceContext, string, ModNameInfo?>? specialLookup = null,
+    bool isEvent = false
+)
 {
     public readonly IAssetName TracedAsset = tracedAsset;
     private readonly Func<TraceContext, string, ModNameInfo?>? specialLookup = specialLookup;
+    internal readonly bool isEvent = isEvent;
 
     private bool active = true;
     private HashSet<string>? tracedKeys = null;
     private readonly List<DataTraceFrame> tracedFrames = [];
+
     internal static Dictionary<Type, Delegate?> keyGetters = [];
     internal static Dictionary<Type, Delegate?> idGetters = [];
 
