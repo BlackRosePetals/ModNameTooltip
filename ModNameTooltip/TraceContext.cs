@@ -77,7 +77,7 @@ public sealed class TraceContext(
     {
         if (!active)
             return false;
-        if (!TracedAsset.IsEquivalentTo(asset.Name))
+        if (!TracedAsset.IsEquivalentTo(asset.NameWithoutLocale))
             return false;
         if (!asset.DataType.IsGenericType)
             return false;
