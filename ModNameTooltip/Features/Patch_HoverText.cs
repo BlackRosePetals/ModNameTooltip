@@ -54,7 +54,7 @@ public static class Patch_HoverText
         nameof(IClickableMenu_drawHoverText_Transpiler)
     )
     {
-        priority = Priority.Last,
+        before = ["DaLion.Enchantments"],
     };
 
     public static void Toggle()
