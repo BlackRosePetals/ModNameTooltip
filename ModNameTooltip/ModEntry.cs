@@ -7,6 +7,7 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
+using StardewValley.GameData.Characters;
 using StardewValley.GameData.Objects;
 
 namespace ModNameTooltip;
@@ -134,6 +135,40 @@ public sealed class ModEntry : Mod
 
     private void ConsoleTestPerf(string arg1, string[] arg2)
     {
+        const int trials = 50;
+        IAssetName assetName = Helper.GameContent.ParseAssetName("Data/Objects");
+        TraceContext ctx = traceCtx[assetName];
+        // warmup
+        {
+            help.GameContent.InvalidateCache(assetName);
+            var _ = help.GameContent.Load<Dictionary<string, ObjectData>>(assetName);
+        }
+        // baseline
+        ctx.active = false;
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        for (int i = 0; i < trials; i++)
+        {
+            help.GameContent.InvalidateCache(assetName);
+            var _ = help.GameContent.Load<Dictionary<string, ObjectData>>(assetName);
+        }
+        stopwatch.Stop();
+        Log($"{assetName} A: {stopwatch.Elapsed.TotalMilliseconds}", LogLevel.Debug);
+        double baselineValue = stopwatch.Elapsed.TotalMilliseconds;
+
+        ctx.active = true;
+        stopwatch.Restart();
+        for (int i = 0; i < trials; i++)
+        {
+            help.GameContent.InvalidateCache(assetName);
+            var _ = help.GameContent.Load<Dictionary<string, ObjectData>>(assetName);
+        }
+        stopwatch.Stop();
+        Log($"{assetName} B: {stopwatch.Elapsed.TotalMilliseconds}", LogLevel.Debug);
+        Log($"{assetName} Compare {stopwatch.Elapsed.TotalMilliseconds / baselineValue:P2}", LogLevel.Info);
+    }
+
+    private void ConsoleTestPerfEvents(string arg1, string[] arg2)
+    {
         const int trials = 10;
         int count = 0;
         double compares = 0;
@@ -144,7 +179,6 @@ public sealed class ModEntry : Mod
             if (!help.GameContent.DoesAssetExist<Dictionary<string, string>>(assetName))
                 continue;
             // warmup
-            for (int i = 0; i < trials; i++)
             {
                 help.GameContent.InvalidateCache(assetName);
                 var _ = help.GameContent.Load<Dictionary<string, string>>(assetName);
