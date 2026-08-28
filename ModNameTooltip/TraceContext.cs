@@ -23,6 +23,7 @@ public sealed class TraceContext(
     internal readonly bool isEvent = isEvent;
 
     internal bool active = true;
+    internal bool editing = false;
     private HashSet<string>? tracedKeys = null;
     private readonly List<DataTraceFrame> tracedFrames = [];
 
@@ -42,10 +43,10 @@ public sealed class TraceContext(
 
     public void PopulateKeyToMod(IAssetName assetName)
     {
-        if (!TracedAsset.IsEquivalentTo(assetName) || tracedKeys == null)
+        if (!active || editing || !TracedAsset.IsEquivalentTo(assetName) || tracedKeys == null)
             return;
 
-        keyToMod.Clear();
+        // intentionally do not clear the keyToMod
         foreach (DataTraceFrame frame in tracedFrames)
         {
             string modId = frame.ModId;
@@ -68,26 +69,19 @@ public sealed class TraceContext(
         string? onBehalfOf = null
     )
     {
-        if (!ShouldTrace(asset))
-            return;
-        HandleEdit_TraceKindData(asset, mod, loadOperations, ref apply, onBehalfOf);
-    }
-
-    private bool ShouldTrace(IAssetInfo asset)
-    {
         if (!active)
-            return false;
+            return;
+        if (editing)
+            return;
         if (!TracedAsset.IsEquivalentTo(asset.NameWithoutLocale))
-            return false;
+            return;
         if (!asset.DataType.IsGenericType)
-            return false;
+            return;
         Type genericDef = asset.DataType.GetGenericTypeDefinition();
         Type[] genericArgs = asset.DataType.GetGenericArguments();
-        if (genericDef == typeof(List<>) || genericDef == typeof(Dictionary<,>) && genericArgs[0] == typeof(string))
-        {
-            return true;
-        }
-        return false;
+        if (genericDef != typeof(List<>) && (genericDef != typeof(Dictionary<,>) || genericArgs[0] != typeof(string)))
+            return;
+        HandleEdit_TraceKindData(asset, mod, loadOperations, ref apply, onBehalfOf);
     }
 
     private void HandleEdit_TraceKindData(
@@ -98,15 +92,13 @@ public sealed class TraceContext(
         string? onBehalfOf
     )
     {
-        if (!active)
-            return;
         Delegate? hashGetter = GetOrCreateKeyGetter(asset.DataType);
         if (hashGetter == null)
             return;
         Action<IAssetData> originalApply = apply;
         apply = asset =>
         {
-            if (!active)
+            if (!active || editing)
             {
                 // original
                 originalApply(asset);
@@ -137,7 +129,9 @@ public sealed class TraceContext(
             }
 
             // original
+            editing = true;
             originalApply(asset);
+            editing = false;
             // original
 
             HashSet<string>? tracedKeysAfter = (HashSet<string>?)hashGetter.DynamicInvoke(asset);
