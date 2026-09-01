@@ -6,8 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [1.3.4] - 2026-08-31
 
+
 ### Fixed
 - Trace crafting and cooking recipe assets separately for greater accuracy
+- Add better crafting compatibility (only for tooltip display)
 
 ## [1.3.3] - 2026-08-28
 

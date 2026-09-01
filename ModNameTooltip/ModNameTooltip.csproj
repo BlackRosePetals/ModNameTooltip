@@ -16,7 +16,7 @@
   <PropertyGroup>
     <Name>Mod Name Tooltip</Name>
     <Authors>mushymato</Authors>
-    <Description>Shows the mod name of items via tooltip</Description>
+    <Description>Shows the mod name of items via tooltip and provide API</Description>
     <UniqueId>mushymato.ModNameTooltip</UniqueId>
     <UpdateKeys>Nexus:50688,GitHub:Mushymato/ModNameTooltip</UpdateKeys>
     <Version>1.3.4</Version>

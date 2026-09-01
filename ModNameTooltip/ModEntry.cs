@@ -99,6 +99,7 @@ public sealed class ModEntry : Mod
         help.ConsoleCommands.Add("mnt-perf", "Test performance on tracing of events", ConsoleTestPerf);
 
         Patch_HoverText.Toggle();
+        Patch_BetterCrafting.Apply();
     }
 
     private static bool TryPatchEdit()
