@@ -29,6 +29,17 @@ public sealed class ModNameAPI : IModNameAPI
     }
 
     // <inheritdoc/>
+    public bool TryGetModName(CraftingRecipe? recipe, [NotNullWhen(true)] out IModNameInfo? modName)
+    {
+        modName = null;
+        if (recipe == null)
+            return false;
+        if (recipe.isCookingRecipe)
+            return TryGetModName_CookingRecipe(recipe.name, out modName);
+        return TryGetModName_CraftingRecipe(recipe.name, out modName);
+    }
+
+    // <inheritdoc/>
     public bool TryGetModName(Character? character, [NotNullWhen(true)] out IModNameInfo? modName)
     {
         modName = null;
@@ -74,22 +85,6 @@ public sealed class ModNameAPI : IModNameAPI
     }
 
     // <inheritdoc/>
-    public bool TryGetModName_FromItemId(string itemId, [NotNullWhen(true)] out IModNameInfo? modName)
-    {
-        modName = null;
-        if (
-            ItemRegistry.GetData(itemId) is ParsedItemData parsedItemData
-            && ModEntry.itemTypeToTraceCtx.TryGetValue(parsedItemData.GetItemTypeId(), out TraceContext? ctx)
-            && ctx.TryGetModName(parsedItemData.ItemId, out ModNameInfo? modNameInner)
-        )
-        {
-            modName = modNameInner;
-            return true;
-        }
-        return false;
-    }
-
-    // <inheritdoc/>
     public bool TryGetModName(GameLocation? location, [NotNullWhen(true)] out IModNameInfo? modName)
     {
         modName = null;
@@ -107,6 +102,35 @@ public sealed class ModNameAPI : IModNameAPI
         return TryGetModName_FromLocationId(locationId, out modName);
     }
 
+    // <inheritdoc/>
+    public bool TryGetModName_FromItemId(string itemId, [NotNullWhen(true)] out IModNameInfo? modName)
+    {
+        modName = null;
+        if (
+            ItemRegistry.GetData(itemId) is ParsedItemData parsedItemData
+            && ModEntry.itemTypeToTraceCtx.TryGetValue(parsedItemData.GetItemTypeId(), out TraceContext? ctx)
+            && ctx.TryGetModName(parsedItemData.ItemId, out ModNameInfo? modNameInner)
+        )
+        {
+            modName = modNameInner;
+            return true;
+        }
+        return false;
+    }
+
+    // <inheritdoc/>
+    public bool TryGetModName_CraftingRecipe(string recipeId, [NotNullWhen(true)] out IModNameInfo? modName)
+    {
+        return TryGetModNameFromCtx(ModEntry.craftingRecipeCtx, recipeId, out modName);
+    }
+
+    // <inheritdoc/>
+    public bool TryGetModName_CookingRecipe(string recipeId, [NotNullWhen(true)] out IModNameInfo? modName)
+    {
+        return TryGetModNameFromCtx(ModEntry.cookingRecipeCtx, recipeId, out modName);
+    }
+
+    // <inheritdoc/>
     public bool TryGetModName(Event? sdvEvent, [NotNullWhen(true)] out IModNameInfo? modName)
     {
         modName = null;

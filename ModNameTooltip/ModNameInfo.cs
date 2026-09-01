@@ -52,7 +52,7 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo) : IModNameInfo
         return new(modId, modInfo);
     }
 
-    public static Vector2 Measure(ModNameInfo? txt, SpriteFont font)
+    public static Vector2 Measure(IModNameInfo? txt, SpriteFont font)
     {
         if (txt == null)
             return Vector2.Zero;
@@ -61,7 +61,7 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo) : IModNameInfo
         return font.MeasureString(txt.ModName);
     }
 
-    public static void Draw(ModNameInfo? txt, SpriteBatch b, SpriteFont font, int x, int y)
+    public static void Draw(IModNameInfo? txt, SpriteBatch b, SpriteFont font, int x, int y)
     {
         if (txt == null)
             return;

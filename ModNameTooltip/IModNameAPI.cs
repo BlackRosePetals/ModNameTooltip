@@ -35,10 +35,20 @@ public interface IModNameAPI
     bool TryGetModName(Item? item, [NotNullWhen(true)] out IModNameInfo? modName);
 
     /// <summary>
-    /// Try and get info about which mod using a real character instance. This supports:
+    /// Try and get info about which mod added a recipe using a real recipe instance.
+    /// Supports crafting and cooking recipes.
+    /// </summary>
+    /// <param name="recipe">The crafting recipe to find mod name for</param>
+    /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
+    /// <returns></returns>
+    bool TryGetModName(CraftingRecipe? recipe, [NotNullWhen(true)] out IModNameInfo? modName);
+
+    /// <summary>
+    /// Try and get info about which mod added a character using a real character instance. This supports:
     /// <list type="bullet">
     /// <item>NPC</item>
-    /// <item>Character</item>
+    /// <item>Pet</item>
+    /// <item>FarmAnimal</item>
     /// </list>
     /// </summary>
     /// <param name="character">The character to find mod name for</param>
@@ -47,7 +57,7 @@ public interface IModNameAPI
     bool TryGetModName(Character? character, [NotNullWhen(true)] out IModNameInfo? modName);
 
     /// <summary>
-    /// Try and get info about which mod using a real terrain feature instance. This supports:
+    /// Try and get info about which mod added a terrain feature using a real terrain feature instance. This supports:
     /// <list type="bullet">
     /// <item>HoeDirt/Crop</item>
     /// <item>Tree (a.k.a. wild trees)</item>
@@ -60,7 +70,7 @@ public interface IModNameAPI
     bool TryGetModName(TerrainFeature? terrainFeature, [NotNullWhen(true)] out IModNameInfo? modName);
 
     /// <summary>
-    /// Try and get info about which mod using a real building instance.
+    /// Try and get info about which mod added a building using a real building instance.
     /// </summary>
     /// <param name="building">The building to get mod name for</param>
     /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
@@ -68,7 +78,7 @@ public interface IModNameAPI
     bool TryGetModName(Building? building, [NotNullWhen(true)] out IModNameInfo? modName);
 
     /// <summary>
-    /// Try and get info about which mod using a real location instance.
+    /// Try and get info about which mod added a location using a real location instance.
     /// Note that cellars and mines are normalized to the shared data and
     /// Farm will use Farm_<farmtype> just like how GameLocation.GetData works.
     /// </summary>
@@ -78,7 +88,7 @@ public interface IModNameAPI
     bool TryGetModName(GameLocation? location, [NotNullWhen(true)] out IModNameInfo? modName);
 
     /// <summary>
-    /// Try and get info about which mod using a real event instance.
+    /// Try and get info about which mod added an event using a real event instance.
     /// </summary>
     /// <param name="sdvEvent">The event to get mod name for</param>
     /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
@@ -92,6 +102,22 @@ public interface IModNameAPI
     /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
     /// <returns>True if the mod is found</returns>
     bool TryGetModName_FromItemId(string itemId, [NotNullWhen(true)] out IModNameInfo? modName);
+
+    /// <summary>
+    /// Try and get info about which mod added a crafting recipe using the recipe id
+    /// </summary>
+    /// <param name="recipeId">The crafting recipe id</param>
+    /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
+    /// <returns></returns>
+    bool TryGetModName_CraftingRecipe(string recipeId, [NotNullWhen(true)] out IModNameInfo? modName);
+
+    /// <summary>
+    /// Try and get info about which mod added a cooking recipe using the recipe id
+    /// </summary>
+    /// <param name="recipe">The cooking recipe id</param>
+    /// <param name="modName">A <see cref="IModNameInfo"/> record containing info about the mod.</param>
+    /// <returns></returns>
+    bool TryGetModName_CookingRecipe(string recipeId, [NotNullWhen(true)] out IModNameInfo? modName);
 
     /// <summary>
     /// Try and get info about which mod added a NPC using the name

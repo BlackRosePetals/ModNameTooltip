@@ -192,6 +192,7 @@ public static class Patch_HoverText
                 .InsertAndAdvance([
                     // try and get a mod name
                     new(OpCodes.Ldarg_S, (byte)9),
+                    new(OpCodes.Ldarg_S, (byte)16),
                     new(OpCodes.Call, AccessTools.DeclaredMethod(typeof(Patch_HoverText), nameof(GetModName))),
                     new(OpCodes.Stloc, modNameLoc.LocalIndex),
                     // measure
@@ -363,13 +364,16 @@ public static class Patch_HoverText
         }
     }
 
-    private static ModNameInfo GetModName(Item hoveredItem)
+    private static IModNameInfo GetModName(Item? hoveredItem, CraftingRecipe? craftingIngredients)
     {
         if (
-            hoveredItem != null
-            && ModEntry.itemTypeToTraceCtx.TryGetValue(hoveredItem.GetItemTypeId(), out TraceContext? ctx)
-            && ctx.TryGetModName(hoveredItem.ItemId, out ModNameInfo? modName)
+            craftingIngredients != null
+            && ModEntry.modNameAPI.TryGetModName(craftingIngredients, out IModNameInfo? modName)
         )
+        {
+            return modName;
+        }
+        if (hoveredItem != null && ModEntry.modNameAPI.TryGetModName(hoveredItem, out modName))
         {
             return modName;
         }

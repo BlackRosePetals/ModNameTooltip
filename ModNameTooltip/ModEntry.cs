@@ -31,6 +31,8 @@ public sealed class ModEntry : Mod
 
     internal static readonly Dictionary<IAssetName, TraceContext> traceCtx = [];
     internal static readonly Dictionary<string, TraceContext> itemTypeToTraceCtx = [];
+    internal static TraceContext craftingRecipeCtx = null!;
+    internal static TraceContext cookingRecipeCtx = null!;
     internal static TraceContext npcTraceCtx = null!;
     internal static TraceContext farmAnimalTraceCtx = null!;
     internal static TraceContext petTraceCtx = null!;
@@ -80,6 +82,8 @@ public sealed class ModEntry : Mod
         // special handling for walls and floors
         AddTraceCtxForWallsAndFloors();
 
+        craftingRecipeCtx = AddTraceCtx("Data/CraftingRecipes");
+        cookingRecipeCtx = AddTraceCtx("Data/CookingRecipes");
         npcTraceCtx = AddTraceCtx("Data/Characters");
         farmAnimalTraceCtx = AddTraceCtx("Data/FarmAnimals");
         petTraceCtx = AddTraceCtx("Data/Pets");
