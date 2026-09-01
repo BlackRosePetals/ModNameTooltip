@@ -8,12 +8,15 @@ namespace ModNameTooltip.Features;
 
 public static class Patch_BetterCrafting
 {
+    private static bool hasBCBuildings = false;
+
     public static void Apply()
     {
         if (!ModEntry.help.ModRegistry.IsLoaded("leclair.bettercrafting"))
         {
             return;
         }
+        hasBCBuildings = ModEntry.help.ModRegistry.IsLoaded("leclair.bcbuildings");
         if (
             AccessTools.DeclaredMethod("Leclair.Stardew.BetterCrafting.Menus.BetterCraftingPage:GetRecipeTooltip")
             is MethodInfo bcGetRecipeTooltip
@@ -93,11 +96,10 @@ public static class Patch_BetterCrafting
             CodeInstruction ldlocRecipeItem = matcher.InstructionAt(2).Clone();
 
             CodeInstruction previousHead = matcher.Instruction.Clone();
-            matcher.Opcode = ldlocRecipeName.opcode;
-            matcher.Operand = ldlocRecipeName.operand;
             matcher
                 .Advance(1)
                 .Insert([
+                    ldlocRecipeName,
                     new(OpCodes.Ldarg_0),
                     new(
                         OpCodes.Callvirt,
@@ -124,8 +126,15 @@ public static class Patch_BetterCrafting
         }
     }
 
-    private static IModInfo? Patch_BetterCrafting_GetModInfo(string name, bool isCooking, Item? recipeItem)
+    private static IModInfo? Patch_BetterCrafting_GetModInfo(
+        IModInfo? info,
+        string name,
+        bool isCooking,
+        Item? recipeItem
+    )
     {
+        if (info != null)
+            return info;
         if (isCooking && ModEntry.modNameAPI.TryGetModName_CookingRecipe(name, out IModNameInfo? modName))
         {
             return modName.ModInfo;
@@ -138,6 +147,10 @@ public static class Patch_BetterCrafting
         {
             return modName.ModInfo;
         }
-        return null;
+        else if (hasBCBuildings && ModEntry.modNameAPI.TryGetModName_FromBuildingId(name, out modName))
+        {
+            return modName.ModInfo;
+        }
+        return info;
     }
 }
