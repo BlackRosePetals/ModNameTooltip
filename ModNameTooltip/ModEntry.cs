@@ -7,7 +7,6 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
-using StardewValley.GameData.Characters;
 using StardewValley.GameData.Objects;
 
 namespace ModNameTooltip;
@@ -29,18 +28,18 @@ public sealed class ModEntry : Mod
 
     internal static readonly Harmony harmony = new(ModId);
 
-    internal static readonly Dictionary<IAssetName, TraceContext> traceCtx = [];
-    internal static readonly Dictionary<string, TraceContext> itemTypeToTraceCtx = [];
-    internal static TraceContext craftingRecipeCtx = null!;
-    internal static TraceContext cookingRecipeCtx = null!;
-    internal static TraceContext npcTraceCtx = null!;
-    internal static TraceContext farmAnimalTraceCtx = null!;
-    internal static TraceContext petTraceCtx = null!;
-    internal static TraceContext cropTraceCtx = null!;
-    internal static TraceContext wildTreeTraceCtx = null!;
-    internal static TraceContext fruitTreeTraceCtx = null!;
-    internal static TraceContext buildingsTraceCtx = null!;
-    internal static TraceContext locationsTraceCtx = null!;
+    internal static readonly Dictionary<IAssetName, ITraceContext> traceCtx = [];
+    internal static readonly Dictionary<string, ITraceContext> itemTypeToTraceCtx = [];
+    internal static ITraceContext craftingRecipeCtx = null!;
+    internal static ITraceContext cookingRecipeCtx = null!;
+    internal static ITraceContext npcTraceCtx = null!;
+    internal static ITraceContext farmAnimalTraceCtx = null!;
+    internal static ITraceContext petTraceCtx = null!;
+    internal static ITraceContext cropTraceCtx = null!;
+    internal static ITraceContext wildTreeTraceCtx = null!;
+    internal static ITraceContext fruitTreeTraceCtx = null!;
+    internal static ITraceContext buildingsTraceCtx = null!;
+    internal static ITraceContext locationsTraceCtx = null!;
 
     internal static readonly ModNameAPI modNameAPI = new();
     internal static readonly PerScreen<Draw_CursorHUD> drawCursorHUD = new(() => new(Context.ScreenId));
@@ -128,7 +127,7 @@ public sealed class ModEntry : Mod
 
     private void ConsoleDebugPrint(string arg1, string[] arg2)
     {
-        foreach (TraceContext ctx in traceCtx.Values)
+        foreach (ITraceContext ctx in traceCtx.Values)
         {
             Log(ctx.TracedAsset.Name, LogLevel.Info);
             foreach ((string key, ModNameInfo modNameText) in ctx.KeyToMod)
@@ -140,46 +139,56 @@ public sealed class ModEntry : Mod
 
     private void ConsoleTestPerf(string arg1, string[] arg2)
     {
-        const int trials = 50;
+        const int trials = 200;
         IAssetName assetName = Helper.GameContent.ParseAssetName("Data/Objects");
-        TraceContext ctx = traceCtx[assetName];
+        ITraceContext ctx = traceCtx[assetName];
         // warmup
         {
             help.GameContent.InvalidateCache(assetName);
             var _ = help.GameContent.Load<Dictionary<string, ObjectData>>(assetName);
         }
         // baseline
-        ctx.active = false;
         Stopwatch stopwatch = Stopwatch.StartNew();
-        for (int i = 0; i < trials; i++)
-        {
-            help.GameContent.InvalidateCache(assetName);
-            var _ = help.GameContent.Load<Dictionary<string, ObjectData>>(assetName);
-        }
+        ctx.Active = false;
+        ConsoleTestPerf_BaseLine(trials, assetName);
         stopwatch.Stop();
         Log($"{assetName} A: {stopwatch.Elapsed.TotalMilliseconds}", LogLevel.Debug);
         double baselineValue = stopwatch.Elapsed.TotalMilliseconds;
 
-        ctx.active = true;
         stopwatch.Restart();
-        for (int i = 0; i < trials; i++)
-        {
-            help.GameContent.InvalidateCache(assetName);
-            var _ = help.GameContent.Load<Dictionary<string, ObjectData>>(assetName);
-        }
+        ctx.Active = true;
+        ConsoleTestPerf_Tracing(trials, assetName);
         stopwatch.Stop();
         Log($"{assetName} B: {stopwatch.Elapsed.TotalMilliseconds}", LogLevel.Debug);
         Log($"{assetName} Compare {stopwatch.Elapsed.TotalMilliseconds / baselineValue:P2}", LogLevel.Info);
     }
 
-    private void ConsoleTestPerfEvents(string arg1, string[] arg2)
+    private static void ConsoleTestPerf_BaseLine(int trials, IAssetName assetName)
+    {
+        for (int i = 0; i < trials; i++)
+        {
+            help.GameContent.InvalidateCache(assetName);
+            var _ = help.GameContent.Load<Dictionary<string, ObjectData>>(assetName);
+        }
+    }
+
+    private static void ConsoleTestPerf_Tracing(int trials, IAssetName assetName)
+    {
+        for (int i = 0; i < trials; i++)
+        {
+            help.GameContent.InvalidateCache(assetName);
+            var _ = help.GameContent.Load<Dictionary<string, ObjectData>>(assetName);
+        }
+    }
+
+    private static void ConsoleTestPerfEvents(string arg1, string[] arg2)
     {
         const int trials = 10;
         int count = 0;
         double compares = 0;
-        foreach ((IAssetName assetName, TraceContext ctx) in traceCtx)
+        foreach ((IAssetName assetName, ITraceContext ctx) in traceCtx)
         {
-            if (!ctx.isEvent)
+            if (!ctx.IsEvent)
                 continue;
             if (!help.GameContent.DoesAssetExist<Dictionary<string, string>>(assetName))
                 continue;
@@ -189,7 +198,7 @@ public sealed class ModEntry : Mod
                 var _ = help.GameContent.Load<Dictionary<string, string>>(assetName);
             }
             // baseline
-            ctx.active = false;
+            ctx.Active = false;
             Stopwatch stopwatch = Stopwatch.StartNew();
             for (int i = 0; i < trials; i++)
             {
@@ -200,7 +209,7 @@ public sealed class ModEntry : Mod
             Log($"{assetName} A: {stopwatch.Elapsed.TotalMilliseconds}", LogLevel.Debug);
             double baselineValue = stopwatch.Elapsed.TotalMilliseconds;
 
-            ctx.active = true;
+            ctx.Active = true;
             stopwatch.Restart();
             for (int i = 0; i < trials; i++)
             {
@@ -293,10 +302,10 @@ public sealed class ModEntry : Mod
                 );
             return;
         }
-        foreach (TraceContext ctx in traceCtx.Values)
+        foreach (ITraceContext ctx in traceCtx.Values)
         {
             // do a bogus edit so that our prefix always happens bolb
-            if (ctx.active && ctx.TracedAsset.IsEquivalentTo(e.NameWithoutLocale))
+            if (ctx.Active && ctx.TracedAsset.IsEquivalentTo(e.NameWithoutLocale))
                 e.Edit(BogusEdit, AssetEditPriority.Early);
         }
     }
@@ -310,9 +319,9 @@ public sealed class ModEntry : Mod
             ModNameInfo.ResetMenuColor();
             return;
         }
-        if (traceCtx.TryGetValue(e.NameWithoutLocale, out TraceContext? ctx))
+        if (traceCtx.TryGetValue(e.NameWithoutLocale, out ITraceContext? ctx))
         {
-            ctx.PopulateKeyToMod(e.NameWithoutLocale);
+            ctx.AssetDoneEdit(e.NameWithoutLocale);
         }
         if (e.NameWithoutLocale.IsEquivalentTo("Data/Locations"))
         {
@@ -353,12 +362,12 @@ public sealed class ModEntry : Mod
         traceCtx[assetName] = ctx;
     }
 
-    private static TraceContext AddTraceCtx(string assetName)
+    private static ITraceContext AddTraceCtx(string assetName)
     {
         return AddTraceCtx(help.GameContent.ParseAssetName(assetName));
     }
 
-    internal static TraceContext AddTraceCtx(IAssetName assetName)
+    internal static ITraceContext AddTraceCtx(IAssetName assetName)
     {
         TraceContext ctx = new(assetName);
         traceCtx[ctx.TracedAsset] = ctx;
@@ -393,7 +402,7 @@ public sealed class ModEntry : Mod
         string? onBehalfOf
     )
     {
-        foreach (TraceContext ctx in traceCtx.Values)
+        foreach (ITraceContext ctx in traceCtx.Values)
         {
             ctx.HandleEdit(__instance.AssetInfo, __instance.Mod, __instance.LoadOperations, ref apply, onBehalfOf);
         }

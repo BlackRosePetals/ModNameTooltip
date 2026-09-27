@@ -13,6 +13,7 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo) : IModNameInfo
     internal const string STARDEW_VALLEY = "STARDEW_VALLEY";
     internal static readonly ModNameInfo STARDEW = new(STARDEW_VALLEY, null);
     internal static readonly ModNameInfo EMPTY = new(string.Empty, null);
+    private static readonly Dictionary<string, ModNameInfo> pool = [];
     private static Color? colorMenu = null;
     private static Color? colorTriadic1 = null;
     private static Color? colorTriadic2 = null;
@@ -45,11 +46,17 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo) : IModNameInfo
 
     public static ModNameInfo Make(string modId)
     {
+        if (string.IsNullOrEmpty(modId))
+            return EMPTY;
         if (modId == STARDEW_VALLEY)
             return STARDEW;
+        if (pool.TryGetValue(modId, out ModNameInfo? info))
+            return info;
 
         IModInfo? modInfo = ModEntry.help.ModRegistry.Get(modId);
-        return new(modId, modInfo);
+        info = new(modId, modInfo);
+        pool[modId] = info;
+        return info;
     }
 
     public static Vector2 Measure(IModNameInfo? txt, SpriteFont font)

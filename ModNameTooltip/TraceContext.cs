@@ -7,25 +7,37 @@ using StardewModdingAPI.Framework.Content;
 
 namespace ModNameTooltip;
 
-public sealed record DataTraceFrame(string? EditedBy, string? OnBehalfOf, IReadOnlySet<string> AddedKeys)
+internal interface ITraceContext
 {
-    public string ModId => OnBehalfOf ?? EditedBy ?? "UNKNOWN";
+    public IAssetName TracedAsset { get; }
+    public IReadOnlyDictionary<string, ModNameInfo> KeyToMod { get; }
+    public bool Active { get; set; }
+    public bool IsEvent { get; }
+
+    public bool TryGetModName(string key, [NotNullWhen(true)] out ModNameInfo? modName);
+    public void AssetDoneEdit(IAssetName assetName);
+    public void HandleEdit(
+        IAssetInfo asset,
+        IModMetadata? mod,
+        List<AssetLoadOperation> loadOperations,
+        ref Action<IAssetData> apply,
+        string? onBehalfOf = null
+    );
 }
 
 public sealed class TraceContext(
     IAssetName tracedAsset,
     Func<TraceContext, string, ModNameInfo?>? specialLookup = null,
     bool isEvent = false
-)
+) : ITraceContext
 {
-    public readonly IAssetName TracedAsset = tracedAsset;
+    public IAssetName TracedAsset { get; } = tracedAsset;
     private readonly Func<TraceContext, string, ModNameInfo?>? specialLookup = specialLookup;
-    internal readonly bool isEvent = isEvent;
+    public bool IsEvent { get; } = isEvent;
 
-    internal bool active = true;
+    public bool Active { get; set; } = true;
     internal bool editing = false;
     private HashSet<string>? tracedKeys = null;
-    private readonly List<DataTraceFrame> tracedFrames = [];
 
     internal static Dictionary<Type, Delegate?> keyGetters = [];
     internal static Dictionary<Type, Delegate?> idGetters = [];
@@ -41,24 +53,12 @@ public sealed class TraceContext(
         return KeyToMod.TryGetValue(key, out modName);
     }
 
-    public void PopulateKeyToMod(IAssetName assetName)
+    public void AssetDoneEdit(IAssetName assetName)
     {
-        if (!active || editing || !TracedAsset.IsEquivalentTo(assetName) || tracedKeys == null)
+        if (!Active || editing || !TracedAsset.IsEquivalentTo(assetName) || tracedKeys == null)
             return;
 
-        // intentionally do not clear the keyToMod
-        foreach (DataTraceFrame frame in tracedFrames)
-        {
-            string modId = frame.ModId;
-            ModNameInfo modNameText = ModNameInfo.Make(modId);
-            foreach (string key in frame.AddedKeys)
-            {
-                keyToMod[key] = modNameText;
-            }
-        }
-
         tracedKeys = null;
-        tracedFrames.Clear();
     }
 
     public void HandleEdit(
@@ -69,7 +69,7 @@ public sealed class TraceContext(
         string? onBehalfOf = null
     )
     {
-        if (!active)
+        if (!Active)
             return;
         if (editing)
             return;
@@ -92,13 +92,13 @@ public sealed class TraceContext(
         string? onBehalfOf
     )
     {
-        Delegate? hashGetter = GetOrCreateKeyGetter(asset.DataType);
+        Delegate? hashGetter = GetOrCreateKeyChecker(asset.DataType);
         if (hashGetter == null)
             return;
         Action<IAssetData> originalApply = apply;
         apply = asset =>
         {
-            if (!active || editing)
+            if (!Active || editing)
             {
                 // original
                 originalApply(asset);
@@ -108,26 +108,27 @@ public sealed class TraceContext(
 
             if (tracedKeys == null)
             {
-                tracedKeys = (HashSet<string>?)hashGetter.DynamicInvoke(asset);
+                AssetLoadOperation? loader = loadOperations.MaxBy(p => p.Priority);
+                tracedKeys = (HashSet<string>?)
+                    hashGetter.DynamicInvoke(
+                        asset,
+                        ModNameInfo.Make(
+                            loader?.OnBehalfOf?.Manifest.UniqueID
+                                ?? loader?.Mod.Manifest.UniqueID
+                                ?? ModNameInfo.STARDEW_VALLEY
+                        ),
+                        keyToMod,
+                        tracedKeys
+                    );
                 if (tracedKeys == null)
                 {
                     ModEntry.Log($"Failed to get traced keys for '{TracedAsset}', disabling tracking", LogLevel.Warn);
-                    active = false;
+                    Active = false;
                     // original
                     originalApply(asset);
                     // original
                     return;
                 }
-                AssetLoadOperation? loader = loadOperations.MaxBy(p => p.Priority);
-                tracedFrames.Add(
-                    new DataTraceFrame(
-                        loader?.Mod.Manifest.UniqueID ?? ModNameInfo.STARDEW_VALLEY,
-                        loader?.OnBehalfOf?.Manifest.UniqueID
-                            ?? loader?.Mod.Manifest.UniqueID
-                            ?? ModNameInfo.STARDEW_VALLEY,
-                        tracedKeys.ToHashSet()
-                    )
-                );
             }
 
             // original
@@ -136,46 +137,44 @@ public sealed class TraceContext(
             editing = false;
             // original
 
-            HashSet<string>? tracedKeysAfter = (HashSet<string>?)hashGetter.DynamicInvoke(asset);
-            if (tracedKeysAfter == null)
-            {
-                ModEntry.Log($"Failed to get traced keys for '{TracedAsset}', disabling tracking", LogLevel.Warn);
-                active = false;
-                return;
-            }
-
-            HashSet<string> added = tracedKeysAfter.Except(tracedKeys).ToHashSet();
-            tracedKeys = tracedKeysAfter;
-
-            tracedFrames.Add(new DataTraceFrame(mod?.Manifest.UniqueID, onBehalfOf, added));
+            hashGetter.DynamicInvoke(
+                asset,
+                ModNameInfo.Make(onBehalfOf ?? mod?.Manifest.UniqueID ?? string.Empty),
+                keyToMod,
+                tracedKeys
+            );
         };
     }
 
-    private static Delegate? GetOrCreateKeyGetter(Type typ)
+    private static Delegate? GetOrCreateKeyChecker(Type typ)
     {
         if (!keyGetters.TryGetValue(typ, out Delegate? methodInfo))
         {
-            methodInfo = CreateKeyGetter(typ);
+            methodInfo = CreateKeyChecker(typ);
             keyGetters[typ] = methodInfo;
         }
         return methodInfo;
     }
 
-    private static Delegate? CreateKeyGetter(Type typ)
+    private static readonly Type keyCheckerType = typeof(Func<,,,,>).MakeGenericType(
+        typeof(IAssetData),
+        typeof(ModNameInfo),
+        typeof(Dictionary<string, ModNameInfo>),
+        typeof(HashSet<string>),
+        typeof(HashSet<string>)
+    );
+
+    private static Delegate? CreateKeyChecker(Type typ)
     {
         Type genericDef = typ.GetGenericTypeDefinition();
         Type[] genericArgs = typ.GetGenericArguments();
         if (genericDef == typeof(Dictionary<,>) && genericArgs[0] == typeof(string))
         {
-            return CheckStringDictInfo
-                ?.MakeGenericMethod(genericArgs[1])
-                .CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IAssetData), typeof(HashSet<string>)));
+            return CheckStringDictInfo?.MakeGenericMethod(genericArgs[1]).CreateDelegate(keyCheckerType);
         }
         else if (genericDef == typeof(List<>))
         {
-            return CheckIdListInfo
-                ?.MakeGenericMethod(genericArgs[0])
-                .CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(IAssetData), typeof(HashSet<string>)));
+            return CheckIdListInfo?.MakeGenericMethod(genericArgs[0]).CreateDelegate(keyCheckerType);
         }
         return null;
     }
@@ -185,16 +184,24 @@ public sealed class TraceContext(
         BindingFlags.Static | BindingFlags.NonPublic
     );
 
-    private static HashSet<string> CheckStringDict<TValue>(IAssetData asset)
+    private static HashSet<string> CheckStringDict<TValue>(
+        IAssetData asset,
+        ModNameInfo info,
+        Dictionary<string, ModNameInfo> keyToMod,
+        HashSet<string>? tracedKeys
+    )
     {
         IDictionary<string, TValue> data = asset.AsDictionary<string, TValue>().Data;
-        HashSet<string> keySet = [];
+        tracedKeys ??= [];
         foreach ((string key, TValue value) in data)
         {
-            if (value != null)
-                keySet.Add(key);
+            if (value != null && !tracedKeys.Contains(key))
+            {
+                tracedKeys.Add(key);
+                keyToMod[key] = info;
+            }
         }
-        return keySet;
+        return tracedKeys;
     }
 
     private static readonly MethodInfo? CheckIdListInfo = typeof(TraceContext).GetMethod(
@@ -202,19 +209,31 @@ public sealed class TraceContext(
         BindingFlags.Static | BindingFlags.NonPublic
     );
 
-    private static HashSet<string> CheckIdList<TValue>(IAssetData asset)
+    private static HashSet<string> CheckIdList<TValue>(
+        IAssetData asset,
+        ModNameInfo info,
+        Dictionary<string, ModNameInfo> keyToMod,
+        HashSet<string>? tracedKeys
+    )
     {
         Delegate? getId = GetIdGetter(typeof(TValue));
         if (getId == null)
             return [];
 
         IList<TValue> data = asset.GetData<IList<TValue>>();
-        HashSet<string> result = [];
+        tracedKeys ??= [];
         foreach (TValue item in data)
         {
-            result.Add((string)getId.DynamicInvoke(item)!);
+            if (item == null)
+                continue;
+            string? id = (string?)getId.DynamicInvoke(item);
+            if (id != null && !tracedKeys.Contains(id))
+            {
+                tracedKeys.Add(id);
+                keyToMod[id] = info;
+            }
         }
-        return result;
+        return tracedKeys;
     }
 
     private static Delegate? GetIdGetter(Type typ)

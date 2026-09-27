@@ -18,7 +18,7 @@ public sealed class ModNameAPI : IModNameAPI
         modName = null;
         if (
             item != null
-            && ModEntry.itemTypeToTraceCtx.TryGetValue(item.GetItemTypeId(), out TraceContext? ctx)
+            && ModEntry.itemTypeToTraceCtx.TryGetValue(item.GetItemTypeId(), out ITraceContext? ctx)
             && ctx.TryGetModName(item.ItemId, out ModNameInfo? modNameInner)
         )
         {
@@ -108,7 +108,7 @@ public sealed class ModNameAPI : IModNameAPI
         modName = null;
         if (
             ItemRegistry.GetData(itemId) is ParsedItemData parsedItemData
-            && ModEntry.itemTypeToTraceCtx.TryGetValue(parsedItemData.GetItemTypeId(), out TraceContext? ctx)
+            && ModEntry.itemTypeToTraceCtx.TryGetValue(parsedItemData.GetItemTypeId(), out ITraceContext? ctx)
             && ctx.TryGetModName(parsedItemData.ItemId, out ModNameInfo? modNameInner)
         )
         {
@@ -196,7 +196,7 @@ public sealed class ModNameAPI : IModNameAPI
     )
     {
         modName = null;
-        if (!ModEntry.traceCtx.TryGetValue(assetName, out TraceContext? ctx))
+        if (!ModEntry.traceCtx.TryGetValue(assetName, out ITraceContext? ctx))
             return false;
         return TryGetModNameFromCtx(ctx, assetId, out modName);
     }
@@ -209,13 +209,17 @@ public sealed class ModNameAPI : IModNameAPI
             throw new InvalidOperationException("RegisterItemDefinitionTrace can only be called before GameLaunched");
         if (ModEntry.itemTypeToTraceCtx.ContainsKey(itemTypeId))
             return;
-        if (!ModEntry.traceCtx.TryGetValue(assetName, out TraceContext? ctx))
+        if (!ModEntry.traceCtx.TryGetValue(assetName, out ITraceContext? ctx))
             ctx = ModEntry.AddTraceCtx(assetName);
         ModEntry.itemTypeToTraceCtx[itemTypeId] = ctx;
     }
     #endregion
 
-    private static bool TryGetModNameFromCtx(TraceContext ctx, string id, [NotNullWhen(true)] out IModNameInfo? modName)
+    private static bool TryGetModNameFromCtx(
+        ITraceContext ctx,
+        string id,
+        [NotNullWhen(true)] out IModNameInfo? modName
+    )
     {
         modName = null;
         if (!string.IsNullOrEmpty(id) && ctx.TryGetModName(id, out ModNameInfo? modNameInner))
