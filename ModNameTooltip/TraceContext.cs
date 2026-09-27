@@ -173,9 +173,8 @@ internal sealed class TraceContext<TValue>(
         tracedKeys ??= [];
         foreach ((string key, TValue value) in data)
         {
-            if (value != null && !tracedKeys.Contains(key))
+            if (value != null && tracedKeys.Add(key))
             {
-                tracedKeys.Add(key);
                 keyToMod[key] = info;
             }
         }
@@ -200,9 +199,8 @@ internal sealed class TraceContext<TValue>(
             if (item == null)
                 continue;
             string? id = (string?)getId.DynamicInvoke(item);
-            if (id != null && !tracedKeys.Contains(id))
+            if (id != null && tracedKeys.Add(id))
             {
-                tracedKeys.Add(id);
                 keyToMod[id] = info;
             }
         }
