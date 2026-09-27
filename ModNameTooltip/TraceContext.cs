@@ -25,21 +25,30 @@ internal interface ITraceContext
     );
 }
 
-public sealed class TraceContext(
+internal sealed class TraceContext<TValue>(
     IAssetName tracedAsset,
-    Func<TraceContext, string, ModNameInfo?>? specialLookup = null,
+    bool isList,
+    Func<ITraceContext, string, ModNameInfo?>? specialLookup = null,
     bool isEvent = false
 ) : ITraceContext
 {
     public IAssetName TracedAsset { get; } = tracedAsset;
-    private readonly Func<TraceContext, string, ModNameInfo?>? specialLookup = specialLookup;
+    private readonly Func<ITraceContext, string, ModNameInfo?>? specialLookup = specialLookup;
     public bool IsEvent { get; } = isEvent;
+    private readonly bool isList = isList;
+    private readonly Type dataType = GetDataType(isList);
+
+    private static Type GetDataType(bool isList)
+    {
+        if (isList)
+            return typeof(List<TValue>);
+        return typeof(Dictionary<string, TValue>);
+    }
 
     public bool Active { get; set; } = true;
     internal bool editing = false;
-    private HashSet<string>? tracedKeys = null;
+    private readonly HashSet<string> tracedKeys = [];
 
-    internal static Dictionary<Type, Delegate?> keyGetters = [];
     internal static Dictionary<Type, Delegate?> idGetters = [];
 
     private readonly Dictionary<string, ModNameInfo> keyToMod = [];
@@ -58,7 +67,7 @@ public sealed class TraceContext(
         if (!Active || editing || !TracedAsset.IsEquivalentTo(assetName) || tracedKeys == null)
             return;
 
-        tracedKeys = null;
+        tracedKeys.Clear();
     }
 
     public void HandleEdit(
@@ -92,9 +101,16 @@ public sealed class TraceContext(
         string? onBehalfOf
     )
     {
-        Delegate? hashGetter = GetOrCreateKeyChecker(asset.DataType);
-        if (hashGetter == null)
+        if (asset.DataType != dataType)
+        {
+            ModEntry.Log(
+                $"Unexpected datatype for '{TracedAsset}' ({asset.DataType} != {dataType}), disabling tracking",
+                LogLevel.Warn
+            );
+            Active = false;
             return;
+        }
+
         Action<IAssetData> originalApply = apply;
         apply = asset =>
         {
@@ -109,17 +125,14 @@ public sealed class TraceContext(
             if (tracedKeys == null)
             {
                 AssetLoadOperation? loader = loadOperations.MaxBy(p => p.Priority);
-                tracedKeys = (HashSet<string>?)
-                    hashGetter.DynamicInvoke(
-                        asset,
-                        ModNameInfo.Make(
-                            loader?.OnBehalfOf?.Manifest.UniqueID
-                                ?? loader?.Mod.Manifest.UniqueID
-                                ?? ModNameInfo.STARDEW_VALLEY
-                        ),
-                        keyToMod,
-                        tracedKeys
-                    );
+                CheckAsset(
+                    asset,
+                    ModNameInfo.Make(
+                        loader?.OnBehalfOf?.Manifest.UniqueID
+                            ?? loader?.Mod.Manifest.UniqueID
+                            ?? ModNameInfo.STARDEW_VALLEY
+                    )
+                );
                 if (tracedKeys == null)
                 {
                     ModEntry.Log($"Failed to get traced keys for '{TracedAsset}', disabling tracking", LogLevel.Warn);
@@ -137,54 +150,19 @@ public sealed class TraceContext(
             editing = false;
             // original
 
-            hashGetter.DynamicInvoke(
-                asset,
-                ModNameInfo.Make(onBehalfOf ?? mod?.Manifest.UniqueID ?? string.Empty),
-                keyToMod,
-                tracedKeys
-            );
+            CheckAsset(asset, ModNameInfo.Make(onBehalfOf ?? mod?.Manifest.UniqueID ?? string.Empty));
         };
     }
 
-    private static Delegate? GetOrCreateKeyChecker(Type typ)
+    private void CheckAsset(IAssetData asset, ModNameInfo info)
     {
-        if (!keyGetters.TryGetValue(typ, out Delegate? methodInfo))
-        {
-            methodInfo = CreateKeyChecker(typ);
-            keyGetters[typ] = methodInfo;
-        }
-        return methodInfo;
+        if (isList)
+            CheckIdList(asset, info, keyToMod, tracedKeys);
+        else
+            CheckStringDict(asset, info, keyToMod, tracedKeys);
     }
 
-    private static readonly Type keyCheckerType = typeof(Func<,,,,>).MakeGenericType(
-        typeof(IAssetData),
-        typeof(ModNameInfo),
-        typeof(Dictionary<string, ModNameInfo>),
-        typeof(HashSet<string>),
-        typeof(HashSet<string>)
-    );
-
-    private static Delegate? CreateKeyChecker(Type typ)
-    {
-        Type genericDef = typ.GetGenericTypeDefinition();
-        Type[] genericArgs = typ.GetGenericArguments();
-        if (genericDef == typeof(Dictionary<,>) && genericArgs[0] == typeof(string))
-        {
-            return CheckStringDictInfo?.MakeGenericMethod(genericArgs[1]).CreateDelegate(keyCheckerType);
-        }
-        else if (genericDef == typeof(List<>))
-        {
-            return CheckIdListInfo?.MakeGenericMethod(genericArgs[0]).CreateDelegate(keyCheckerType);
-        }
-        return null;
-    }
-
-    private static readonly MethodInfo? CheckStringDictInfo = typeof(TraceContext).GetMethod(
-        nameof(CheckStringDict),
-        BindingFlags.Static | BindingFlags.NonPublic
-    );
-
-    private static HashSet<string> CheckStringDict<TValue>(
+    private static HashSet<string> CheckStringDict(
         IAssetData asset,
         ModNameInfo info,
         Dictionary<string, ModNameInfo> keyToMod,
@@ -204,12 +182,7 @@ public sealed class TraceContext(
         return tracedKeys;
     }
 
-    private static readonly MethodInfo? CheckIdListInfo = typeof(TraceContext).GetMethod(
-        nameof(CheckIdList),
-        BindingFlags.Static | BindingFlags.NonPublic
-    );
-
-    private static HashSet<string> CheckIdList<TValue>(
+    private static HashSet<string> CheckIdList(
         IAssetData asset,
         ModNameInfo info,
         Dictionary<string, ModNameInfo> keyToMod,

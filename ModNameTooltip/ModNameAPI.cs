@@ -210,7 +210,7 @@ public sealed class ModNameAPI : IModNameAPI
         if (ModEntry.itemTypeToTraceCtx.ContainsKey(itemTypeId))
             return;
         if (!ModEntry.traceCtx.TryGetValue(assetName, out ITraceContext? ctx))
-            ctx = ModEntry.AddTraceCtx(assetName);
+            ctx = ModEntry.AddTraceCtx<object>(assetName);
         ModEntry.itemTypeToTraceCtx[itemTypeId] = ctx;
     }
     #endregion

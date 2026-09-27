@@ -7,7 +7,23 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
+using StardewValley.GameData;
+using StardewValley.GameData.BigCraftables;
+using StardewValley.GameData.Buildings;
+using StardewValley.GameData.Characters;
+using StardewValley.GameData.Crops;
+using StardewValley.GameData.FarmAnimals;
+using StardewValley.GameData.FruitTrees;
+using StardewValley.GameData.Locations;
 using StardewValley.GameData.Objects;
+using StardewValley.GameData.Pants;
+using StardewValley.GameData.Pets;
+using StardewValley.GameData.Shirts;
+using StardewValley.GameData.Tools;
+using StardewValley.GameData.Weapons;
+using StardewValley.GameData.WildTrees;
+using StardewValley.Objects;
+using StardewValley.TerrainFeatures;
 
 namespace ModNameTooltip;
 
@@ -67,30 +83,30 @@ public sealed class ModEntry : Mod
         help.Events.Input.ButtonsChanged += OnButtonsChanged;
         help.Events.Display.RenderedHud += OnRenderedHud;
 
-        AddItemTraceCtx("(O)", "Data/Objects");
-        AddItemTraceCtx("(BC)", "Data/BigCraftables");
-        AddItemTraceCtx("(F)", "Data/Furniture");
-        AddItemTraceCtx("(W)", "Data/Weapons");
-        AddItemTraceCtx("(B)", "Data/Boots");
-        AddItemTraceCtx("(H)", "Data/hats");
-        AddItemTraceCtx("(M)", "Data/Mannequins");
-        AddItemTraceCtx("(P)", "Data/Pants");
-        AddItemTraceCtx("(S)", "Data/Shirts");
-        AddItemTraceCtx("(T)", "Data/Tools");
-        AddItemTraceCtx("(TR)", "Data/Trinkets");
+        AddItemTraceCtx<ObjectData>("(O)", "Data/Objects");
+        AddItemTraceCtx<BigCraftableData>("(BC)", "Data/BigCraftables");
+        AddItemTraceCtx<string>("(F)", "Data/Furniture");
+        AddItemTraceCtx<WeaponData>("(W)", "Data/Weapons");
+        AddItemTraceCtx<string>("(B)", "Data/Boots");
+        AddItemTraceCtx<string>("(H)", "Data/hats");
+        AddItemTraceCtx<MannequinData>("(M)", "Data/Mannequins");
+        AddItemTraceCtx<PantsData>("(P)", "Data/Pants");
+        AddItemTraceCtx<ShirtData>("(S)", "Data/Shirts");
+        AddItemTraceCtx<ToolData>("(T)", "Data/Tools");
+        AddItemTraceCtx<TrinketData>("(TR)", "Data/Trinkets");
         // special handling for walls and floors
         AddTraceCtxForWallsAndFloors();
 
-        craftingRecipeCtx = AddTraceCtx("Data/CraftingRecipes");
-        cookingRecipeCtx = AddTraceCtx("Data/CookingRecipes");
-        npcTraceCtx = AddTraceCtx("Data/Characters");
-        farmAnimalTraceCtx = AddTraceCtx("Data/FarmAnimals");
-        petTraceCtx = AddTraceCtx("Data/Pets");
-        cropTraceCtx = AddTraceCtx("Data/Crops");
-        wildTreeTraceCtx = AddTraceCtx("Data/WildTrees");
-        fruitTreeTraceCtx = AddTraceCtx("Data/FruitTrees");
-        buildingsTraceCtx = AddTraceCtx("Data/Buildings");
-        locationsTraceCtx = AddTraceCtx("Data/Locations");
+        craftingRecipeCtx = AddTraceCtx<string>("Data/CraftingRecipes");
+        cookingRecipeCtx = AddTraceCtx<string>("Data/CookingRecipes");
+        npcTraceCtx = AddTraceCtx<CharacterData>("Data/Characters");
+        farmAnimalTraceCtx = AddTraceCtx<FarmAnimalData>("Data/FarmAnimals");
+        petTraceCtx = AddTraceCtx<PetData>("Data/Pets");
+        cropTraceCtx = AddTraceCtx<CropData>("Data/Crops");
+        wildTreeTraceCtx = AddTraceCtx<WildTreeData>("Data/WildTrees");
+        fruitTreeTraceCtx = AddTraceCtx<FruitTreeData>("Data/FruitTrees");
+        buildingsTraceCtx = AddTraceCtx<BuildingData>("Data/Buildings");
+        locationsTraceCtx = AddTraceCtx<LocationData>("Data/Locations");
 
         AddLocationEventTraceCtx("Farm");
 
@@ -329,16 +345,17 @@ public sealed class ModEntry : Mod
         }
     }
 
-    internal static void AddItemTraceCtx(string itemTypeId, string assetNameStr)
+    internal static void AddItemTraceCtx<TValue>(string itemTypeId, string assetNameStr, bool isList = false)
     {
-        itemTypeToTraceCtx[itemTypeId] = AddTraceCtx(help.GameContent.ParseAssetName(assetNameStr));
+        itemTypeToTraceCtx[itemTypeId] = AddTraceCtx<TValue>(help.GameContent.ParseAssetName(assetNameStr), isList);
     }
 
     private static void AddTraceCtxForWallsAndFloors()
     {
         IAssetName assetName = help.GameContent.ParseAssetName("Data/AdditionalWallpaperFlooring");
-        TraceContext ctx = new(
+        TraceContext<ModWallpaperOrFlooring> ctx = new(
             assetName,
+            true,
             static (ctx, itemId) =>
             {
                 if (int.TryParse(itemId, out _))
@@ -362,14 +379,14 @@ public sealed class ModEntry : Mod
         traceCtx[assetName] = ctx;
     }
 
-    private static ITraceContext AddTraceCtx(string assetName)
+    private static ITraceContext AddTraceCtx<TValue>(string assetName, bool isList = false)
     {
-        return AddTraceCtx(help.GameContent.ParseAssetName(assetName));
+        return AddTraceCtx<TValue>(help.GameContent.ParseAssetName(assetName), isList);
     }
 
-    internal static ITraceContext AddTraceCtx(IAssetName assetName)
+    internal static ITraceContext AddTraceCtx<TValue>(IAssetName assetName, bool isList = false)
     {
-        TraceContext ctx = new(assetName);
+        TraceContext<TValue> ctx = new(assetName, isList);
         traceCtx[ctx.TracedAsset] = ctx;
         return ctx;
     }
@@ -379,8 +396,9 @@ public sealed class ModEntry : Mod
         IAssetName assetName = help.GameContent.ParseAssetName($"Data/Events/{locationId}");
         if (traceCtx.ContainsKey(assetName))
             return;
-        TraceContext ctx = new(
+        TraceContext<string> ctx = new(
             assetName,
+            false,
             static (ctx, eventId) =>
             {
                 foreach ((string key, ModNameInfo? modName) in ctx.KeyToMod)
