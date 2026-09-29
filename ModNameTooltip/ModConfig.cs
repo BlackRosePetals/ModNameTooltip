@@ -17,7 +17,9 @@ public sealed class ModConfig
     public bool Enable_HUD_NPC { get; set; } = true;
     public bool Enable_HUD_FarmAnimal { get; set; } = true;
     public bool Enable_HUD_Object { get; set; } = true;
-    public bool Enable_HUD_TerrainFeature { get; set; } = true;
+    public bool Enable_HUD_Crop { get; set; } = true;
+    public bool Enable_HUD_WildTree { get; set; } = true;
+    public bool Enable_HUD_FruitTree { get; set; } = true;
     public bool Enable_HUD_Building { get; set; } = true;
     public bool Enable_HUD_Event { get; set; } = false;
     public bool Enable_HUD_Location { get; set; } = false;
@@ -59,6 +61,7 @@ public sealed class ModConfig
 
     internal bool HoldingToShow = false;
     internal bool Enable_HUD_Display => (HoldingToShow || !HoldToShow_HUD.IsBound) && Enable_HUD;
+    internal bool Enable_HUD_TerrainFeature => Enable_HUD_Crop || Enable_HUD_WildTree || Enable_HUD_FruitTree;
 
     public void Register(IManifest mod, IGenericModConfigMenuApi? gmcm)
     {
@@ -115,9 +118,21 @@ public sealed class ModConfig
         );
         gmcm.AddBoolOption(
             mod,
-            () => Enable_HUD_TerrainFeature,
-            (value) => Enable_HUD_TerrainFeature = value,
-            I18n.Config_EnableHUDTerrainFeature_Name
+            () => Enable_HUD_Crop,
+            (value) => Enable_HUD_Crop = value,
+            I18n.Config_EnableHUDCrop_Name
+        );
+        gmcm.AddBoolOption(
+            mod,
+            () => Enable_HUD_WildTree,
+            (value) => Enable_HUD_WildTree = value,
+            I18n.Config_EnableHUDWildTree_Name
+        );
+        gmcm.AddBoolOption(
+            mod,
+            () => Enable_HUD_FruitTree,
+            (value) => Enable_HUD_FruitTree = value,
+            I18n.Config_EnableHUDFruitTree_Name
         );
         gmcm.AddBoolOption(
             mod,
@@ -191,7 +206,9 @@ public sealed class ModConfig
         Enable_HUD_NPC = defaultConfig.Enable_HUD_NPC;
         Enable_HUD_FarmAnimal = defaultConfig.Enable_HUD_FarmAnimal;
         Enable_HUD_Object = defaultConfig.Enable_HUD_Object;
-        Enable_HUD_TerrainFeature = defaultConfig.Enable_HUD_TerrainFeature;
+        Enable_HUD_Crop = defaultConfig.Enable_HUD_Crop;
+        Enable_HUD_WildTree = defaultConfig.Enable_HUD_WildTree;
+        Enable_HUD_FruitTree = defaultConfig.Enable_HUD_FruitTree;
         Enable_HUD_Building = defaultConfig.Enable_HUD_Building;
         Enable_HUD_Event = defaultConfig.Enable_HUD_Event;
         Enable_HUD_Location = defaultConfig.Enable_HUD_Location;

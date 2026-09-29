@@ -157,17 +157,17 @@ public sealed class Draw_CursorHUD(int screenId)
             if (hoveredTerrain.TryGetTarget(out TerrainFeature? target) && target == terrain)
                 return true;
             ClearWeakRefs();
+            if (ModEntry.config.Enable_HUD_Crop && terrain is HoeDirt dirt && dirt.crop is Crop crop)
+                hoveredName = ItemRegistry.GetDataOrErrorItem(crop.netSeedIndex.Value).DisplayName;
+            else if (ModEntry.config.Enable_HUD_WildTree && terrain is Tree tree)
+                hoveredName = GetWildTreeName(tree);
+            else if (ModEntry.config.Enable_HUD_FruitTree && terrain is FruitTree fruitTree)
+                hoveredName = TokenParser.ParseText(fruitTree.GetData()?.DisplayName ?? fruitTree.treeId.Value);
+            else
+                return false;
             hoveredTerrain.SetTarget(terrain);
             if (ModEntry.modNameAPI.TryGetModName(terrain, out IModNameInfo? modName))
             {
-                if (terrain is HoeDirt dirt && dirt.crop is Crop crop)
-                    hoveredName = ItemRegistry.GetDataOrErrorItem(crop.netSeedIndex.Value).DisplayName;
-                else if (terrain is Tree tree)
-                    hoveredName = GetWildTreeName(tree);
-                else if (terrain is FruitTree fruitTree)
-                    hoveredName = TokenParser.ParseText(fruitTree.GetData()?.DisplayName ?? fruitTree.treeId.Value);
-                else
-                    hoveredName = $"{terrain.GetType().Name}[{tile}]";
                 hoveredModName = modName;
                 CalculateSizes();
                 return true;
@@ -288,6 +288,8 @@ public sealed class Draw_CursorHUD(int screenId)
                 return;
             }
         }
+        if (eventNameTimer == -1)
+            ClearHovered();
     }
 
     internal void OnUpdateTicked(UpdateTickedEventArgs e)
