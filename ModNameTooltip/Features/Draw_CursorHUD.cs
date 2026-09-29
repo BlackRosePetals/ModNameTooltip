@@ -23,7 +23,7 @@ public sealed class Draw_CursorHUD(int screenId)
     private readonly WeakReference<SObject?> hoveredObject = new(null);
     private readonly WeakReference<TerrainFeature?> hoveredTerrain = new(null);
     private readonly WeakReference<Building?> hoveredBuilding = new(null);
-    private readonly WeakReference<Event?> eventTarget = new(null);
+    private readonly WeakReference<Event?> hoveredEvent = new(null);
     private IModNameInfo? currentLocationModName = null;
 
     private double eventNameTimer = -1;
@@ -35,10 +35,12 @@ public sealed class Draw_CursorHUD(int screenId)
         hoveredObject.SetTarget(null);
         hoveredTerrain.SetTarget(null);
         hoveredBuilding.SetTarget(null);
+        hoveredEvent.SetTarget(null);
     }
 
     private IModNameInfo? hoveredModName;
     private string? hoveredName;
+    private Vector2? hoveredPos;
 
     private Vector2 hoveredNamePos = Vector2.Zero;
     private Vector2 hoveredModNamePos = Vector2.Zero;
@@ -46,11 +48,11 @@ public sealed class Draw_CursorHUD(int screenId)
 
     private readonly int screenId = screenId;
 
-    private bool TryMatchNPC(Vector2 tile, GameLocation location)
+    private bool TryMatchNPC(Vector2 mouse, GameLocation location)
     {
         if (!ModEntry.config.Enable_HUD_NPC)
             return false;
-        Rectangle searchBounds = new((int)tile.X * 64, (int)tile.Y * 64, 64, 128);
+        Rectangle searchBounds = new((int)mouse.X - 32, (int)mouse.Y - 64, 64, 128);
         foreach (NPC character in location.characters)
         {
             if (character.IsInvisible)
@@ -63,6 +65,9 @@ public sealed class Draw_CursorHUD(int screenId)
             hoveredNPC.SetTarget(character);
             if (ModEntry.modNameAPI.TryGetModName(character, out IModNameInfo? modName))
             {
+                Vector2 standingPx = character.StandingPixel.ToVector2();
+                standingPx.Y -= 48;
+                hoveredPos = standingPx;
                 if (character is Pet pet)
                 {
                     hoveredName = I18n.Hud_FarmAnimal(
@@ -83,13 +88,13 @@ public sealed class Draw_CursorHUD(int screenId)
         return false;
     }
 
-    private bool TryMatchFarmAnimal(Vector2 tile, GameLocation location)
+    private bool TryMatchFarmAnimal(Vector2 mouse, GameLocation location)
     {
         if (!ModEntry.config.Enable_HUD_FarmAnimal)
             return false;
         foreach (FarmAnimal farmAnimal in location.animals.Values)
         {
-            if (!farmAnimal.GetCursorPetBoundingBox().Contains((int)tile.X * 64, (int)tile.Y * 64))
+            if (!farmAnimal.GetCursorPetBoundingBox().Contains(mouse))
                 continue;
             if (hoveredFarmAnimal.TryGetTarget(out FarmAnimal? target) && target == farmAnimal)
                 return true;
@@ -97,6 +102,9 @@ public sealed class Draw_CursorHUD(int screenId)
             hoveredFarmAnimal.SetTarget(farmAnimal);
             if (ModEntry.modNameAPI.TryGetModName(farmAnimal, out IModNameInfo? modName))
             {
+                Vector2 standingPx = farmAnimal.StandingPixel.ToVector2();
+                standingPx.Y -= 48;
+                hoveredPos = standingPx;
                 hoveredModName = modName;
                 hoveredName = I18n.Hud_FarmAnimal(
                     string.IsNullOrEmpty(farmAnimal.displayName) ? farmAnimal.Name : farmAnimal.displayName,
@@ -122,6 +130,7 @@ public sealed class Draw_CursorHUD(int screenId)
             hoveredObject.SetTarget(obj);
             if (ModEntry.modNameAPI.TryGetModName(obj, out IModNameInfo? modName))
             {
+                hoveredPos = new Vector2(obj.TileLocation.X + 0.5f, obj.TileLocation.Y) * Game1.tileSize;
                 hoveredName = obj.DisplayName;
                 hoveredModName = modName;
                 CalculateSizes();
@@ -168,6 +177,7 @@ public sealed class Draw_CursorHUD(int screenId)
             hoveredTerrain.SetTarget(terrain);
             if (ModEntry.modNameAPI.TryGetModName(terrain, out IModNameInfo? modName))
             {
+                hoveredPos = new Vector2(terrain.Tile.X + 0.5f, terrain.Tile.Y) * Game1.tileSize;
                 hoveredModName = modName;
                 CalculateSizes();
                 return true;
@@ -191,6 +201,10 @@ public sealed class Draw_CursorHUD(int screenId)
             hoveredBuilding.SetTarget(building);
             if (ModEntry.modNameAPI.TryGetModName(building, out IModNameInfo? modName))
             {
+                hoveredPos = new Vector2(
+                    (building.tileX.Value + (building.tilesWide.Value / 2f)) * Game1.tileSize,
+                    (building.tileY.Value + building.tilesHigh.Value - 1) * Game1.tileSize
+                );
                 hoveredName = TokenParser.ParseText(data.Name);
                 hoveredModName = modName;
                 CalculateSizes();
@@ -211,17 +225,17 @@ public sealed class Draw_CursorHUD(int screenId)
             && location.currentEvent is Event sdvEvent
         )
         {
-            if (eventTarget.TryGetTarget(out Event? target) && target.id == sdvEvent.id)
+            if (hoveredEvent.TryGetTarget(out Event? target) && target.id == sdvEvent.id)
                 return true;
             ClearWeakRefs();
-            eventTarget.SetTarget(sdvEvent);
+            hoveredEvent.SetTarget(sdvEvent);
             sdvEvent.onEventFinished = (Action)
                 Delegate.Combine(
                     sdvEvent.onEventFinished,
                     () =>
                     {
                         ClearHovered();
-                        eventTarget.SetTarget(null);
+                        hoveredEvent.SetTarget(null);
                         eventNameTimer = -1;
                     }
                 );
@@ -231,6 +245,7 @@ public sealed class Draw_CursorHUD(int screenId)
                     eventNameTimer = -2;
                 else
                     eventNameTimer = EVENT_TIMER_LEN;
+                hoveredPos = null;
                 hoveredName = I18n.Hud_Event(sdvEvent.id);
                 hoveredModName = modName;
                 CalculateSizes();
@@ -245,6 +260,7 @@ public sealed class Draw_CursorHUD(int screenId)
         if (ModEntry.config.Enable_HUD_Location && currentLocationModName != null)
         {
             ClearWeakRefs();
+            hoveredPos = null;
             hoveredName = location.DisplayName ?? location.NameOrUniqueName;
             hoveredModName = currentLocationModName;
             CalculateSizes();
@@ -258,11 +274,12 @@ public sealed class Draw_CursorHUD(int screenId)
         ClearWeakRefs();
         hoveredName = null;
         hoveredModName = null;
+        hoveredPos = null;
         lastCheckedTile = -Vector2.One;
         CalculateSizes();
     }
 
-    internal void CheckTile(Vector2 tile)
+    internal void CheckTileOrCursor(Vector2 mouse, Vector2 tile)
     {
         if (!ModEntry.config.Enable_HUD || screenId != Context.ScreenId)
             return;
@@ -277,8 +294,8 @@ public sealed class Draw_CursorHUD(int screenId)
         {
             lastCheckedTile = tile;
             if (
-                TryMatchNPC(tile, location)
-                || TryMatchFarmAnimal(tile, location)
+                TryMatchNPC(mouse, location)
+                || TryMatchFarmAnimal(mouse, location)
                 || TryMatchObject(tile, location)
                 || TryMatchTerrainFeature(tile, location)
                 || TryMatchBuilding(tile, location)
@@ -347,7 +364,22 @@ public sealed class Draw_CursorHUD(int screenId)
         int x = (int)(Game1.uiViewport.Width / 2 - (hoveredSize.X / 2));
         int y = 4;
 
-        if (Game1.IsHudDrawn && Game1.activeClickableMenu == null && Game1.currentLocation.currentEvent == null)
+        if (ModEntry.config.ShowHUDAboveTile && hoveredPos.HasValue)
+        {
+            Vector2 pos = Game1.GlobalToLocal(hoveredPos.Value);
+            x = (int)pos.X;
+            y = (int)pos.Y;
+            x -= (int)(hoveredSize.X / 2);
+            if (y + hoveredSize.Y + Game1.tileSize + 20 >= Game1.viewport.Height)
+            {
+                y -= (int)(hoveredSize.Y + Game1.tileSize);
+            }
+            else
+            {
+                y += Game1.tileSize + 20;
+            }
+        }
+        else if (Game1.IsHudDrawn && Game1.activeClickableMenu == null && Game1.currentLocation.currentEvent == null)
         {
             foreach (IClickableMenu clickableMenu in Game1.onScreenMenus)
             {

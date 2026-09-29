@@ -251,7 +251,7 @@ public sealed class ModEntry : Mod
 
     private void OnCursorMoved(object? sender, CursorMovedEventArgs e)
     {
-        drawCursorHUD.Value.CheckTile(e.NewPosition.Tile);
+        drawCursorHUD.Value.CheckTileOrCursor(e.NewPosition.AbsolutePixels, e.NewPosition.Tile);
     }
 
     private void OnButtonsChanged(object? sender, ButtonsChangedEventArgs e)

@@ -14,6 +14,7 @@ public sealed class ModConfig
     public bool Enable_HUD { get; set; } = true;
     public KeybindList Toggle_HUD = new();
     public KeybindList HoldToShow_HUD = new();
+    public bool ShowHUDAboveTile { get; set; } = true;
     public bool Enable_HUD_NPC { get; set; } = true;
     public bool Enable_HUD_FarmAnimal { get; set; } = true;
     public bool Enable_HUD_Object { get; set; } = true;
@@ -100,6 +101,13 @@ public sealed class ModConfig
             mod,
             () => HoldToShow_HUD,
             (value) => HoldToShow_HUD = value,
+            I18n.Config_HoldToShowHUD_Name,
+            I18n.Config_HoldToShowHUD_Desc
+        );
+        gmcm.AddBoolOption(
+            mod,
+            () => ShowHUDAboveTile,
+            (value) => ShowHUDAboveTile = value,
             I18n.Config_HoldToShowHUD_Name,
             I18n.Config_HoldToShowHUD_Desc
         );
