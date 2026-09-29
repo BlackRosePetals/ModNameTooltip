@@ -22,8 +22,6 @@ using StardewValley.GameData.Shirts;
 using StardewValley.GameData.Tools;
 using StardewValley.GameData.Weapons;
 using StardewValley.GameData.WildTrees;
-using StardewValley.Objects;
-using StardewValley.TerrainFeatures;
 
 namespace ModNameTooltip;
 

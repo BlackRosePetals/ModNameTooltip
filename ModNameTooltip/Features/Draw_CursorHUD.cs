@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-using HarmonyLib;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -203,7 +201,7 @@ public sealed class Draw_CursorHUD(int screenId)
         return false;
     }
 
-    private bool TryMatchEvent([CallerMemberName] string? caller = null)
+    private bool TryMatchEvent()
     {
         if (
             ModEntry.config.Enable_HUD_Event
@@ -215,7 +213,6 @@ public sealed class Draw_CursorHUD(int screenId)
         {
             if (eventTarget.TryGetTarget(out Event? target) && target.id == sdvEvent.id)
                 return true;
-            ModEntry.Log($"'{sdvEvent.fromAssetName}':'{sdvEvent.id}' @ '{location.NameOrUniqueName}'");
             ClearWeakRefs();
             eventTarget.SetTarget(sdvEvent);
             sdvEvent.onEventFinished = (Action)
@@ -230,7 +227,10 @@ public sealed class Draw_CursorHUD(int screenId)
                 );
             if (ModEntry.modNameAPI.TryGetModName(sdvEvent, out IModNameInfo? modName))
             {
-                eventNameTimer = EVENT_TIMER_LEN;
+                if (ModEntry.config.HoldToShow_HUD.IsBound)
+                    eventNameTimer = -2;
+                else
+                    eventNameTimer = EVENT_TIMER_LEN;
                 hoveredName = I18n.Hud_Event(sdvEvent.id);
                 hoveredModName = modName;
                 CalculateSizes();
@@ -272,7 +272,7 @@ public sealed class Draw_CursorHUD(int screenId)
             Game1.currentLocation is GameLocation location
             && Game1.activeClickableMenu == null
             && location.currentEvent == null
-            && eventNameTimer <= 0
+            && eventNameTimer == -1
         )
         {
             lastCheckedTile = tile;
@@ -288,8 +288,6 @@ public sealed class Draw_CursorHUD(int screenId)
                 return;
             }
         }
-        if (eventNameTimer <= 0)
-            ClearHovered();
     }
 
     internal void OnUpdateTicked(UpdateTickedEventArgs e)
@@ -298,7 +296,10 @@ public sealed class Draw_CursorHUD(int screenId)
         {
             eventNameTimer -= Game1.currentGameTime.ElapsedGameTime.TotalMilliseconds;
             if (eventNameTimer < 0)
+            {
                 ClearHovered();
+                eventNameTimer = -1;
+            }
         }
         else if (Context.IsWorldReady)
         {
