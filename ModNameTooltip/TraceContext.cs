@@ -104,8 +104,8 @@ internal sealed class TraceContext<TValue>(
         if (asset.DataType != dataType)
         {
             ModEntry.Log(
-                $"Unexpected datatype for '{TracedAsset}' ({asset.DataType} != {dataType}), disabling tracking",
-                LogLevel.Warn
+                $"Unexpected datatype for '{TracedAsset}', expected {dataType} got {asset.DataType}, tracing will be disabled",
+                LogLevel.Error
             );
             Active = false;
             return;
@@ -135,7 +135,10 @@ internal sealed class TraceContext<TValue>(
                 );
                 if (tracedKeys == null)
                 {
-                    ModEntry.Log($"Failed to get traced keys for '{TracedAsset}', disabling tracking", LogLevel.Warn);
+                    ModEntry.Log(
+                        $"Failed to get traced keys for '{TracedAsset}', tracing will be disabled",
+                        LogLevel.Error
+                    );
                     Active = false;
                     // original
                     originalApply(asset);
