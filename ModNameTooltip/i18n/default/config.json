@@ -28,4 +28,6 @@
   "config.Color_SDV.desc": "Hex color code, text color for 'Stardew Valley' in tooltips and HUD",
   "config.Color_Mod.name": "Color: Mod",
   "config.Color_Mod.desc": "Hex color code, text color for mod names in tooltips and HUD",
+  "config.PreferDirectModId.name": "Prefer Direct ModId",
+  "config.PreferDirectModId.desc": "When checking for mod source, prefer the mod indicated by ModId_Thing format if available.",
 }

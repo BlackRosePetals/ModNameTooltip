@@ -59,6 +59,16 @@ public sealed record ModNameInfo(string ModId, IModInfo? ModInfo) : IModNameInfo
         return info;
     }
 
+    public static ModNameInfo Make(IModInfo modInfo)
+    {
+        if (pool.TryGetValue(modInfo.Manifest.UniqueID, out ModNameInfo? info))
+            return info;
+
+        info = new(modInfo.Manifest.UniqueID, modInfo);
+        pool[modInfo.Manifest.UniqueID] = info;
+        return info;
+    }
+
     public static Vector2 Measure(IModNameInfo? txt, SpriteFont font)
     {
         if (txt == null)

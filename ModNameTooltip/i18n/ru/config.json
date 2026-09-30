@@ -9,6 +9,8 @@
   "config.Enable_HUD.desc": "Включить HUD, отображающий имя субъекта и название его мода для объектов под курсором (NPC, животные, растения, предметы и т.д.).",
   "config.Toggle_HUD.name": "Клавиша переключения HUD",
   "config.Toggle_HUD.desc": "Клавиша для включения/отключения HUD с названиями модов.",
+  "config.HoldToShow_HUD.name": "Show HUD Key",
+  "config.HoldToShow_HUD.desc": "Keybinding to hold and show HUD.",
   "config.Enable_HUD_NPC.name": "- NPC / Питомцы",
   "config.Enable_HUD_FarmAnimal.name": "- Домашние животные",
   "config.Enable_HUD_Object.name": "- Объекты",
@@ -25,5 +27,7 @@
   "config.Color_SDV.name": "Цвет: Stardew Valley",
   "config.Color_SDV.desc": "Шестнадцатеричный код цвета для текста «Stardew Valley» в подсказках и HUD.",
   "config.Color_Mod.name": "Цвет: Мод",
-  "config.Color_Mod.desc": "Шестнадцатеричный код цвета для названий модов в подсказках и HUD."
+  "config.Color_Mod.desc": "Шестнадцатеричный код цвета для названий модов в подсказках и HUD.",
+  "config.PreferDirectModId.name": "Prefer Direct ModId",
+  "config.PreferDirectModId.desc": "When checking for mod source, prefer the mod indicated by ModId_Thing format if available.",
 }

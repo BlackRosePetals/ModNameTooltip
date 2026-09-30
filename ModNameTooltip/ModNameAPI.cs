@@ -19,10 +19,9 @@ public sealed class ModNameAPI : IModNameAPI
         if (
             item != null
             && ModEntry.itemTypeToTraceCtx.TryGetValue(item.GetItemTypeId(), out ITraceContext? ctx)
-            && ctx.TryGetModName(item.ItemId, out ModNameInfo? modNameInner)
+            && TryGetModNameFromCtx(ctx, item.ItemId, out modName)
         )
         {
-            modName = modNameInner;
             return true;
         }
         return false;
@@ -222,7 +221,17 @@ public sealed class ModNameAPI : IModNameAPI
     )
     {
         modName = null;
-        if (!string.IsNullOrEmpty(id) && ctx.TryGetModName(id, out ModNameInfo? modNameInner))
+        if (string.IsNullOrEmpty(id))
+            return false;
+        if (
+            ModEntry.config.PreferDirectModId
+            && ModEntry.help.ModRegistry.GetFromNamespacedId(id, true) is IModInfo modInfo
+        )
+        {
+            modName = ModNameInfo.Make(modInfo);
+            return true;
+        }
+        if (ctx.TryGetModName(id, out ModNameInfo? modNameInner))
         {
             modName = modNameInner;
             return true;

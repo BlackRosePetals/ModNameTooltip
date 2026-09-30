@@ -28,4 +28,6 @@
   "config.Color_SDV.desc": "十六进制颜色码，用于显示'星露谷物语'的颜色",
   "config.Color_Mod.name": "颜色：模组",
   "config.Color_Mod.desc": "十六进制颜色码，用于显示模组名的颜色",
+  "config.PreferDirectModId.name": "使用内置名模组ID",
+  "config.PreferDirectModId.desc": "检查模组来源时，若ID为ModId_Thing格式则优先使用ID里的模组",
 }

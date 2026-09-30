@@ -56,6 +56,7 @@ public sealed class ModConfig
             }
         }
     } = null;
+    public bool PreferDirectModId { get; set; } = true;
 
     internal Color? Color_SDV_Parsed = null;
     internal Color? Color_Mod_Parsed = null;
@@ -86,7 +87,7 @@ public sealed class ModConfig
         gmcm.AddBoolOption(
             mod,
             () => Enable_HUD,
-            SetEnable_HUD,
+            (value) => Enable_HUD = value,
             I18n.Config_EnableHUD_Name,
             I18n.Config_EnableHUD_Desc
         );
@@ -180,6 +181,13 @@ public sealed class ModConfig
             (value) => Color_Mod = value,
             I18n.Config_ColorMod_Name,
             I18n.Config_ColorMod_Desc
+        );
+        gmcm.AddBoolOption(
+            mod,
+            () => PreferDirectModId,
+            (value) => PreferDirectModId = value,
+            I18n.Config_PreferDirectModId_Name,
+            I18n.Config_PreferDirectModId_Desc
         );
     }
 
