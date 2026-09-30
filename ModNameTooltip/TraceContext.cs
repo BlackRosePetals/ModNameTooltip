@@ -25,7 +25,7 @@ internal interface ITraceContext
     );
 }
 
-internal sealed class TraceContext<TValue>(
+internal class TraceContext<TValue>(
     IAssetName tracedAsset,
     bool isList,
     Func<ITraceContext, string, ModNameInfo?>? specialLookup = null,
@@ -33,25 +33,18 @@ internal sealed class TraceContext<TValue>(
 ) : ITraceContext
 {
     public IAssetName TracedAsset { get; } = tracedAsset;
-    private readonly Func<ITraceContext, string, ModNameInfo?>? specialLookup = specialLookup;
+    protected readonly Func<ITraceContext, string, ModNameInfo?>? specialLookup = specialLookup;
     public bool IsEvent { get; } = isEvent;
-    private readonly bool isList = isList;
-    private readonly Type dataType = GetDataType(isList);
-
-    private static Type GetDataType(bool isList)
-    {
-        if (isList)
-            return typeof(List<TValue>);
-        return typeof(Dictionary<string, TValue>);
-    }
+    protected readonly bool isList = isList;
+    protected readonly Type dataType = isList ? typeof(List<TValue>) : typeof(Dictionary<string, TValue>);
 
     public bool Active { get; set; } = true;
     internal bool editing = false;
-    private HashSet<string>? tracedKeys = null;
+    protected HashSet<string>? tracedKeys = null;
 
     internal static Dictionary<Type, Delegate?> idGetters = [];
 
-    private readonly Dictionary<string, ModNameInfo> keyToMod = [];
+    protected readonly Dictionary<string, ModNameInfo> keyToMod = [];
     public IReadOnlyDictionary<string, ModNameInfo> KeyToMod => keyToMod;
 
     public bool TryGetModName(string key, [NotNullWhen(true)] out ModNameInfo? modName)
@@ -67,6 +60,11 @@ internal sealed class TraceContext<TValue>(
         if (!Active || editing || !TracedAsset.IsEquivalentTo(assetName) || tracedKeys == null)
             return;
 
+        AssetDoneCleanup();
+    }
+
+    protected virtual void AssetDoneCleanup()
+    {
         tracedKeys = null;
     }
 
@@ -157,7 +155,7 @@ internal sealed class TraceContext<TValue>(
         };
     }
 
-    private void CheckAsset(IAssetData asset, ModNameInfo info)
+    protected virtual void CheckAsset(IAssetData asset, ModNameInfo info)
     {
         tracedKeys = isList
             ? CheckIdList(asset, info, keyToMod, tracedKeys)
@@ -175,7 +173,7 @@ internal sealed class TraceContext<TValue>(
         tracedKeys ??= [];
         foreach ((string key, TValue value) in data)
         {
-            if (value != null && tracedKeys.Add(key))
+            if (value is not null && tracedKeys.Add(key))
             {
                 keyToMod[key] = info;
             }
@@ -198,10 +196,10 @@ internal sealed class TraceContext<TValue>(
         tracedKeys ??= [];
         foreach (TValue item in data)
         {
-            if (item == null)
+            if (item is null)
                 continue;
             string? id = (string?)getId.DynamicInvoke(item);
-            if (id != null && tracedKeys.Add(id))
+            if (id is not null && tracedKeys.Add(id))
             {
                 keyToMod[id] = info;
             }
