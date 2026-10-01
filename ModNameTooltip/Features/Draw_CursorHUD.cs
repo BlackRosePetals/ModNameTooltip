@@ -320,10 +320,6 @@ public sealed class Draw_CursorHUD(int screenId)
                 eventNameTimer = -1;
             }
         }
-        else if (Context.IsWorldReady)
-        {
-            TryMatchEvent();
-        }
     }
 
     internal void OnNewLocation(GameLocation location)
