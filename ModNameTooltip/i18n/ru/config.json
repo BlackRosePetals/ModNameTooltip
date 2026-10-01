@@ -11,6 +11,8 @@
   "config.Toggle_HUD.desc": "Клавиша для включения/отключения HUD с названиями модов.",
   "config.HoldToShow_HUD.name": "Show HUD Key",
   "config.HoldToShow_HUD.desc": "Keybinding to hold and show HUD.",
+  "config.ShowHUDAboveTile.name": "Show HUD Above Tile",
+  "config.ShowHUDAboveTile.desc": "If true, the HUD is displayed below the tile of the subject. Otherwise, it is displayed on the top or bottom side of the viewport.",
   "config.Enable_HUD_NPC.name": "- NPC / Питомцы",
   "config.Enable_HUD_FarmAnimal.name": "- Домашние животные",
   "config.Enable_HUD_Object.name": "- Объекты",

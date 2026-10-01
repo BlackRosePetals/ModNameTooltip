@@ -11,6 +11,8 @@
   "config.Toggle_HUD.desc": "切换HUD的快捷键",
   "config.HoldToShow_HUD.name": "HUD显示键",
   "config.HoldToShow_HUD.desc": "按住显示HUD的快捷键",
+  "config.ShowHUDAboveTile.name": "HUD显示于目标位置",
+  "config.ShowHUDAboveTile.desc": "若勾选此选项，HUD显示在对象底下。未勾选时HUD显示于屏幕上方或下方",
   "config.Enable_HUD_NPC.name": "- 角色/宠物",
   "config.Enable_HUD_FarmAnimal.name": "- 牲畜",
   "config.Enable_HUD_Object.name": "- 物品",

@@ -11,6 +11,8 @@
   "config.Toggle_HUD.desc": "Keybinding to toggle on/off the mod name HUD.",
   "config.HoldToShow_HUD.name": "Show HUD Key",
   "config.HoldToShow_HUD.desc": "Keybinding to hold and show HUD.",
+  "config.ShowHUDAboveTile.name": "Show HUD Above Tile",
+  "config.ShowHUDAboveTile.desc": "If true, the HUD is displayed below the tile of the subject. Otherwise, it is displayed on the top or bottom side of the viewport.",
   "config.Enable_HUD_NPC.name": "- NPCs/Pets",
   "config.Enable_HUD_FarmAnimal.name": "- Farm Animals",
   "config.Enable_HUD_Object.name": "- Objects",

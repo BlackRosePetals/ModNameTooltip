@@ -109,8 +109,8 @@ public sealed class ModConfig
             mod,
             () => ShowHUDAboveTile,
             (value) => ShowHUDAboveTile = value,
-            I18n.Config_HoldToShowHUD_Name,
-            I18n.Config_HoldToShowHUD_Desc
+            I18n.Config_ShowHUDAboveTile_Name,
+            I18n.Config_ShowHUDAboveTile_Desc
         );
         gmcm.AddBoolOption(mod, () => Enable_HUD_NPC, (value) => Enable_HUD_NPC = value, I18n.Config_EnableHUDNPC_Name);
         gmcm.AddBoolOption(
